@@ -109,31 +109,49 @@ export default function Home() {
     <div className="min-h-full flex flex-col bg-zinc-950">
 
       {/* Hero Section */}
-      <div className="relative w-full h-[45vh] bg-zinc-900 overflow-hidden flex items-end pb-6 px-4">
+      <div className="relative w-full h-[45vh] md:h-[52vh] bg-zinc-900 overflow-hidden flex items-end">
         {heroMovie ? (
           <>
             <Image
-              src={`https://image.tmdb.org/t/p/w780${heroMovie.posterPath}`}
+              src={`https://image.tmdb.org/t/p/original${heroMovie.posterPath}`}
               alt={heroMovie.title}
               fill
-              className="object-cover opacity-50"
+              className="object-cover opacity-40"
               unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
-            <div className="relative z-10 w-full max-w-lg mx-auto">
-              <span className="px-2 py-1 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-2 inline-block">
-                Sıradaki Film
-              </span>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight drop-shadow-lg line-clamp-2">
-                {heroMovie.title}
-              </h2>
-              <Link
-                href={`/movie/${heroMovie.id}`}
-                className="inline-flex items-center gap-2 bg-white text-zinc-950 px-5 py-2 rounded-full font-semibold text-sm hover:bg-zinc-100 transition"
-              >
-                <Play size={15} fill="currentColor" />
-                Detaylara Git
-              </Link>
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/60 via-transparent to-transparent hidden md:block" />
+            {/* Hero content */}
+            <div className="relative z-10 w-full max-w-6xl mx-auto px-4 md:px-8 pb-6 md:pb-10 flex items-end justify-between gap-8">
+              <div className="flex-1 max-w-lg">
+                <span className="px-2.5 py-1 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-3 inline-block">
+                  Sıradaki Film
+                </span>
+                <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 leading-tight drop-shadow-lg line-clamp-2">
+                  {heroMovie.title}
+                </h2>
+                <Link
+                  href={`/movie/${heroMovie.id}`}
+                  className="inline-flex items-center gap-2 bg-white text-zinc-950 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-zinc-100 transition"
+                >
+                  <Play size={15} fill="currentColor" />
+                  Detaylara Git
+                </Link>
+              </div>
+              {/* Desktop: stats panel */}
+              {movies !== undefined && (
+                <div className="hidden md:flex gap-3 shrink-0">
+                  {[
+                    { label: "İzlenecek", count: movies.filter(m => m.status === "wishlist").length, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
+                    { label: "İzlendi", count: movies.filter(m => m.status === "watched").length, color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
+                  ].map(s => (
+                    <div key={s.label} className={`flex flex-col items-center justify-center w-24 h-20 rounded-2xl border backdrop-blur-sm ${s.bg}`}>
+                      <span className={`text-2xl font-bold ${s.color}`}>{s.count}</span>
+                      <span className="text-[11px] text-zinc-400 mt-0.5">{s.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -145,7 +163,7 @@ export default function Home() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 w-full max-w-lg mx-auto px-4 pt-4">
+      <div className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-8 pt-5">
 
         {/* Tab + Sort Row */}
         <div className="flex items-center gap-3 mb-5">
@@ -255,7 +273,7 @@ export default function Home() {
                   <p className="text-sm">Bu listede henüz film yok.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 pb-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 pb-4">
                   {filteredMovies.map((movie) => (
                     <Link
                       key={movie.id}
@@ -280,7 +298,7 @@ export default function Home() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
 
                       <div className="absolute bottom-0 left-0 right-0 p-2">
-                        <p className="text-[9px] font-semibold text-white leading-tight line-clamp-2 mb-1">
+                        <p className="text-[9px] sm:text-[10px] font-semibold text-white leading-tight line-clamp-2 mb-1">
                           {movie.title}
                         </p>
                         {activeTab === "watched" && movie.rating > 0 && (
@@ -289,7 +307,7 @@ export default function Home() {
                           </div>
                         )}
                         {activeTab === "watched" && movie.watchedAt && (
-                          <p className="text-[8px] text-zinc-400 truncate">
+                          <p className="text-[8px] text-zinc-400 truncate hidden sm:block">
                             {dayjs(movie.watchedAt).fromNow()}
                           </p>
                         )}

@@ -33,6 +33,8 @@ export async function fetchAndCacheMovie(id) {
       releaseDate: data.release_date,
       runtime: data.runtime,
       genres: data.genres?.map((g) => g.name) || [],
+      voteAverage: data.vote_average ? Math.round(data.vote_average * 10) / 10 : null,
+      voteCount: data.vote_count || 0,
       // Cache max 1 trailer and 5 cast members to save DB space
       trailer: data.videos?.results?.find(v => v.type === "Trailer" && v.site === "YouTube")?.key || null,
       cast: data.credits?.cast?.slice(0, 5).map(c => ({ name: c.name, character: c.character, profilePath: c.profile_path })) || [],
