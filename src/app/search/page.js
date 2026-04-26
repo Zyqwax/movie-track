@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SearchIcon, Image as ImageIcon, TrendingUp } from "lucide-react";
+import { SearchIcon, Image as ImageIcon, TrendingUp, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
@@ -18,6 +18,23 @@ export default function SearchPage() {
   const [trending, setTrending] = useState([]);
   const [loading, setLoading] = useState(false);
   const [localMovies, setLocalMovies] = useState([]);
+
+  // Restore search state on mount
+  useEffect(() => {
+    const savedQuery = sessionStorage.getItem("movieTracker_searchQuery");
+    const savedResults = sessionStorage.getItem("movieTracker_searchResults");
+    
+    if (savedQuery) {
+      setQueryInput(savedQuery);
+    }
+    if (savedResults) {
+      try {
+        setResults(JSON.parse(savedResults));
+      } catch (e) {
+        console.error("Error parsing saved results", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (user === null) {
@@ -72,7 +89,9 @@ export default function SearchPage() {
       );
       if (res.ok) {
         const data = await res.json();
-        setResults(data.results || []);
+        const newResults = data.results || [];
+        setResults(newResults);
+        sessionStorage.setItem("movieTracker_searchResults", JSON.stringify(newResults));
       }
     } catch (error) {
       console.error("Search error:", error);
@@ -95,13 +114,32 @@ export default function SearchPage() {
           type="text"
           value={queryInput}
           onChange={(e) => {
-            setQueryInput(e.target.value);
-            if (!e.target.value.trim()) setResults([]);
+            const val = e.target.value;
+            setQueryInput(val);
+            sessionStorage.setItem("movieTracker_searchQuery", val);
+            if (!val.trim()) {
+              setResults([]);
+              sessionStorage.setItem("movieTracker_searchResults", JSON.stringify([]));
+            }
           }}
           placeholder="İzlemek istediğiniz filmi yazın..."
-          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all duration-300"
+          className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 pl-12 pr-12 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all duration-300"
         />
         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-rose-500 transition-colors" size={20} />
+        {queryInput && (
+          <button
+            type="button"
+            onClick={() => {
+              setQueryInput("");
+              setResults([]);
+              sessionStorage.setItem("movieTracker_searchQuery", "");
+              sessionStorage.setItem("movieTracker_searchResults", JSON.stringify([]));
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+          >
+            <X size={20} />
+          </button>
+        )}
       </form>
 
       {isShowingTrending && trending.length > 0 && (

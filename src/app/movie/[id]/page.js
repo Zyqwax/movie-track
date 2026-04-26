@@ -233,9 +233,9 @@ export default function MovieDetailPage({ params }) {
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-black/40" />
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-transparent to-transparent hidden md:block" />
 
-        <Link href="/" className="absolute top-5 left-5 p-2.5 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition">
+        <button onClick={() => router.back()} className="absolute top-5 left-5 p-2.5 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition">
           <ArrowLeft size={22} />
-        </Link>
+        </button>
 
         {/* Desktop: title overlay on backdrop */}
         <div className="hidden md:flex absolute bottom-8 left-0 right-0 px-8 max-w-6xl mx-auto items-end gap-6">
