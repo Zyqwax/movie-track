@@ -307,12 +307,12 @@ export default function MovieDetailPage({ params }) {
               id="watch-now-btn"
               onClick={watchNow}
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-rose-600 text-white rounded-2xl text-sm font-semibold hover:bg-rose-500 active:scale-95 transition-all"
+              className="flex-1 flex items-center justify-center py-3 bg-rose-600 text-white rounded-2xl text-sm font-semibold hover:bg-rose-500 active:scale-95 transition-all"
             >
               {userData?.status === "watched" ? (
-                <><RotateCcw size={17} />Tekrar İzledim</>
+                <span className="flex items-center gap-2"><RotateCcw size={17} /><span>Tekrar İzledim</span></span>
               ) : (
-                <><CheckCircle size={18} />İzledim</>
+                <span className="flex items-center gap-2"><CheckCircle size={18} /><span>İzledim</span></span>
               )}
             </button>
 
