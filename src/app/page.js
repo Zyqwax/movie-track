@@ -9,7 +9,6 @@ import { Star, Image as ImageIcon, Play, ArrowUpDown, ChevronDown } from "lucide
 import Image from "next/image";
 import Link from "next/link";
 import clsx from "clsx";
-import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -178,20 +177,12 @@ export default function Home() {
                 key={tab.value}
                 onClick={() => handleTabChange(tab.value)}
                 className={clsx(
-                  "relative flex-1 py-2 text-xs font-semibold rounded-lg transition-colors duration-200 z-10 flex items-center justify-center",
+                  "relative flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-300 z-10 flex items-center justify-center",
                   activeTab === tab.value
-                    ? "text-white"
+                    ? "text-white bg-zinc-700 shadow-sm"
                     : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
-                {activeTab === tab.value && (
-                  <motion.div
-                    layoutId="tab-pill"
-                    className="absolute inset-0 bg-zinc-700 rounded-lg"
-                    style={{ zIndex: -1 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                  />
-                )}
                 <span className="relative z-10">{tab.label}</span>
                 {movies !== undefined && (
                   <span className={clsx(
@@ -221,15 +212,10 @@ export default function Home() {
               <ChevronDown size={13} className={clsx("transition-transform", sortOpen && "rotate-180")} />
             </button>
 
-            <AnimatePresence>
-              {sortOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-48 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-xl shadow-black/40 overflow-hidden z-50"
-                >
+            {sortOpen && (
+              <div
+                className="absolute right-0 top-full mt-2 w-48 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-xl shadow-black/40 overflow-hidden z-50 animate-fade-in"
+              >
                   {currentSortOptions.map((opt) => (
                     <button
                       key={opt.value}
@@ -245,9 +231,8 @@ export default function Home() {
                       {opt.label}
                     </button>
                   ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+              </div>
+            )}
           </div>
         </div>
 
@@ -257,15 +242,8 @@ export default function Home() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" />
           </div>
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-            >
-              {filteredMovies.length === 0 ? (
+          <div key={activeTab} className="animate-fade-in">
+            {filteredMovies.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-zinc-500 py-16">
                   <div className="w-16 h-16 mb-4 rounded-full bg-zinc-900 flex items-center justify-center">
                     <ImageIcon className="w-8 h-8 opacity-50" />
@@ -316,8 +294,7 @@ export default function Home() {
                   ))}
                 </div>
               )}
-            </motion.div>
-          </AnimatePresence>
+          </div>
         )}
       </div>
     </div>

@@ -8,7 +8,6 @@ import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function SearchPage() {
   const { user } = useAuth();
@@ -118,19 +117,15 @@ export default function SearchPage() {
         </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 md:gap-4">
-          <AnimatePresence>
             {displayMovies.map((movie, index) => {
               // Check if user has this movie in their list
               const localData = localMovies.find(m => m.id === String(movie.id));
               
               return (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ delay: index * 0.03 }}
+                <div
                   key={movie.id}
-                  className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-zinc-800"
+                  className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-zinc-800 animate-fade-in"
+                  style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <Link href={`/movie/${movie.id}`}>
                     {movie.poster_path ? (
@@ -163,10 +158,9 @@ export default function SearchPage() {
                       )}
                     </div>
                   </Link>
-                </motion.div>
+                </div>
               )
             })}
-          </AnimatePresence>
         </div>
       )}
     </div>
