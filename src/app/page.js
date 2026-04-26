@@ -178,24 +178,24 @@ export default function Home() {
                 key={tab.value}
                 onClick={() => handleTabChange(tab.value)}
                 className={clsx(
-                  "relative flex-1 py-2 text-xs font-semibold rounded-lg transition-colors duration-200 z-10",
+                  "relative flex-1 py-2 text-xs font-semibold rounded-lg transition-colors duration-200 z-10 flex items-center justify-center",
                   activeTab === tab.value
                     ? "text-white"
                     : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
                 {activeTab === tab.value && (
-                  <motion.span
+                  <motion.div
                     layoutId="tab-pill"
                     className="absolute inset-0 bg-zinc-700 rounded-lg"
                     style={{ zIndex: -1 }}
                     transition={{ type: "spring", stiffness: 400, damping: 35 }}
                   />
                 )}
-                {tab.label}
+                <span className="relative z-10">{tab.label}</span>
                 {movies !== undefined && (
                   <span className={clsx(
-                    "ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full",
+                    "relative z-10 ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full",
                     activeTab === tab.value ? "bg-rose-500/20 text-rose-400" : "bg-zinc-800 text-zinc-500"
                   )}>
                     {movies.filter((m) => m.status === tab.value).length}
