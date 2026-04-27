@@ -13,28 +13,36 @@ export default function SearchPage() {
   const { user } = useAuth();
   const router = useRouter();
   
-  const [queryInput, setQueryInput] = useState("");
-  const [results, setResults] = useState([]);
-  const [trending, setTrending] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [localMovies, setLocalMovies] = useState([]);
-
-  // Restore search state on mount
-  useEffect(() => {
-    const savedQuery = sessionStorage.getItem("movieTracker_searchQuery");
-    const savedResults = sessionStorage.getItem("movieTracker_searchResults");
-    
-    if (savedQuery) {
-      setQueryInput(savedQuery);
+  const [queryInput, setQueryInput] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("movieTracker_searchQuery") || "";
     }
-    if (savedResults) {
-      try {
-        setResults(JSON.parse(savedResults));
-      } catch (e) {
-        console.error("Error parsing saved results", e);
+    return "";
+  });
+  const [results, setResults] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("movieTracker_searchResults");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
       }
     }
-  }, []);
+    return [];
+  });
+  const [trending, setTrending] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("movieTracker_trendingCache");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(false);
+  const [localMovies, setLocalMovies] = useState([]);
 
   useEffect(() => {
     if (user === null) {
@@ -65,7 +73,11 @@ export default function SearchPage() {
       const res = await fetch(`https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}&language=tr-TR`);
       if (res.ok) {
         const data = await res.json();
-        setTrending(data.results.slice(0, 12));
+        const trendingData = data.results.slice(0, 12);
+        setTrending(trendingData);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("movieTracker_trendingCache", JSON.stringify(trendingData));
+        }
       }
     } catch (error) {
       console.error("Trending error:", error);

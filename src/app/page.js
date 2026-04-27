@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot } from "firebase/firestore";
-import { Star, Image as ImageIcon, Play, ArrowUpDown, ChevronDown } from "lucide-react";
+import { Star, Image as ImageIcon, Play, ArrowUpDown, ChevronDown, Dices } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import clsx from "clsx";
@@ -51,13 +51,51 @@ function sortMovies(movies, sortKey) {
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("wishlist");
-  const [movies, setMovies] = useState(undefined);
-  const [sortKey, setSortKey] = useState("addedAt_desc");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("movieTracker_homeTab") || "wishlist";
+    }
+    return "wishlist";
+  });
+  const [movies, setMovies] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("movieTracker_moviesCache");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return undefined;
+  });
+  const [sortKey, setSortKey] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("movieTracker_homeSortKey") || "addedAt_desc";
+    }
+    return "addedAt_desc";
+  });
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef(null);
   // Track which direction the tab switched for animation
-  const prevTabRef = useRef("wishlist");
+  const prevTabRef = useRef(activeTab);
+  const [heroMovieId, setHeroMovieId] = useState(null);
+
+  useEffect(() => {
+    if (movies && !heroMovieId) {
+      const wishlist = movies.filter((m) => m.status === "wishlist");
+      if (wishlist.length > 0) {
+        setHeroMovieId(wishlist[Math.floor(Math.random() * wishlist.length)].id);
+      }
+    }
+  }, [movies, heroMovieId]);
+
+  const handleShuffleHero = () => {
+    if (!movies) return;
+    const wishlist = movies.filter((m) => m.status === "wishlist");
+    if (wishlist.length > 0) {
+      setHeroMovieId(wishlist[Math.floor(Math.random() * wishlist.length)].id);
+    }
+  };
 
   useEffect(() => {
     if (user === null) {
@@ -70,6 +108,9 @@ export default function Home() {
         const data = [];
         snapshot.forEach((d) => data.push({ id: d.id, ...d.data() }));
         setMovies(data);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("movieTracker_moviesCache", JSON.stringify(data));
+        }
       });
       return () => unsubscribe();
     }
@@ -91,14 +132,25 @@ export default function Home() {
   const handleTabChange = (tab) => {
     prevTabRef.current = activeTab;
     setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("movieTracker_homeTab", tab);
+    }
+    
     // Reset to sensible default sort for each tab
-    setSortKey(tab === "wishlist" ? "addedAt_desc" : "watchedAt_desc");
+    const newSort = tab === "wishlist" ? "addedAt_desc" : "watchedAt_desc";
+    setSortKey(newSort);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("movieTracker_homeSortKey", newSort);
+    }
     setSortOpen(false);
   };
 
   const baseMovies = movies?.filter((m) => m.status === activeTab) || [];
   const filteredMovies = sortMovies(baseMovies, sortKey);
-  const heroMovie = movies?.filter((m) => m.status === "wishlist")[0];
+  const wishlistMovies = movies?.filter((m) => m.status === "wishlist") || [];
+  const heroMovie = heroMovieId 
+    ? wishlistMovies.find(m => m.id === heroMovieId) || wishlistMovies[0]
+    : wishlistMovies[0];
   const currentSortOptions = SORT_OPTIONS[activeTab];
   const currentSortLabel = currentSortOptions.find((o) => o.value === sortKey)?.label;
 
@@ -124,18 +176,27 @@ export default function Home() {
             <div className="relative z-10 w-full max-w-6xl mx-auto px-4 md:px-8 pb-6 md:pb-10 flex items-end justify-between gap-8">
               <div className="flex-1 max-w-lg">
                 <span className="px-2.5 py-1 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-3 inline-block">
-                  Sıradaki Film
+                  Kendimi Şanslı Hissediyorum
                 </span>
                 <h2 className="text-2xl md:text-4xl font-bold text-white mb-3 leading-tight drop-shadow-lg line-clamp-2">
                   {heroMovie.title}
                 </h2>
-                <Link
-                  href={`/movie/${heroMovie.id}`}
-                  className="inline-flex items-center gap-2 bg-white text-zinc-950 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-zinc-100 transition"
-                >
-                  <Play size={15} fill="currentColor" />
-                  Detaylara Git
-                </Link>
+                <div className="flex gap-2 items-center mt-2">
+                  <Link
+                    href={`/movie/${heroMovie.id}`}
+                    className="inline-flex items-center gap-2 bg-white text-zinc-950 px-5 py-2.5 rounded-full font-semibold text-sm hover:bg-zinc-100 transition"
+                  >
+                    <Play size={15} fill="currentColor" />
+                    Detaylara Git
+                  </Link>
+                  <button 
+                    onClick={handleShuffleHero}
+                    className="p-2.5 bg-zinc-800/80 backdrop-blur-md text-white rounded-full hover:bg-zinc-700 transition border border-zinc-700/50 flex items-center justify-center group cursor-pointer"
+                    title="Kendimi Şanslı Hissediyorum (Zarla)"
+                  >
+                    <Dices size={18} className="group-hover:rotate-180 transition-transform duration-500" />
+                  </button>
+                </div>
               </div>
               {/* Desktop: stats panel */}
               {movies !== undefined && (
@@ -219,7 +280,13 @@ export default function Home() {
                   {currentSortOptions.map((opt) => (
                     <button
                       key={opt.value}
-                      onClick={() => { setSortKey(opt.value); setSortOpen(false); }}
+                      onClick={() => { 
+                        setSortKey(opt.value); 
+                        if (typeof window !== "undefined") {
+                          sessionStorage.setItem("movieTracker_homeSortKey", opt.value);
+                        }
+                        setSortOpen(false); 
+                      }}
                       className={clsx(
                         "w-full text-left px-4 py-3 text-xs transition-colors",
                         sortKey === opt.value

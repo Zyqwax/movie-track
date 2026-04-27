@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot } from "firebase/firestore";
 import Image from "next/image";
-import { LogOut, Film, Eye, Clock, Star } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Film, Eye, Clock, Star, UserPlus, Users } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [movies, setMovies] = useState(undefined);
+  const [friends, setFriends] = useState([]);
 
   useEffect(() => {
     if (user === null) {
@@ -27,12 +29,23 @@ export default function ProfilePage() {
 
     if (user) {
       const q = query(collection(db, "users", user.uid, "movies"));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      const unsubscribeMovies = onSnapshot(q, (snapshot) => {
         const data = [];
         snapshot.forEach((doc) => data.push({ id: doc.id, ...doc.data() }));
         setMovies(data);
       });
-      return () => unsubscribe();
+
+      const friendsQ = query(collection(db, "users", user.uid, "friends"));
+      const unsubscribeFriends = onSnapshot(friendsQ, (snapshot) => {
+        const data = [];
+        snapshot.forEach((doc) => data.push({ id: doc.id, ...doc.data() }));
+        setFriends(data);
+      });
+
+      return () => {
+        unsubscribeMovies();
+        unsubscribeFriends();
+      };
     }
   }, [user, router]);
 
@@ -72,12 +85,37 @@ export default function ProfilePage() {
             {dayjs(user.metadata?.creationTime).format("MMMM YYYY")} tarihinden beri üye
           </p>
         </div>
-        <button
-          onClick={logout}
-          className="shrink-0 p-2.5 rounded-xl bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition border border-zinc-800"
-        >
-          <LogOut size={18} />
-        </button>
+        <div className="flex flex-col gap-2 shrink-0">
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/u/${user.uid}`;
+              if (navigator.share) {
+                navigator.share({
+                  title: 'Movie Tracker',
+                  text: 'Beni Movie Tracker\'da arkadaş ekle ve film listemi gör!',
+                  url: url,
+                }).catch((err) => {
+                  console.error("Share failed:", err);
+                });
+              } else {
+                navigator.clipboard.writeText(url).then(() => {
+                  alert("Profil linkiniz kopyalandı!");
+                });
+              }
+            }}
+            className="p-2.5 rounded-xl bg-zinc-900 text-rose-500 hover:text-rose-400 hover:bg-zinc-800 transition border border-zinc-800 flex items-center justify-center"
+            title="Arkadaş Ekle"
+          >
+            <UserPlus size={18} />
+          </button>
+          <button
+            onClick={logout}
+            className="p-2.5 rounded-xl bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition border border-zinc-800 flex items-center justify-center"
+            title="Çıkış Yap"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -109,6 +147,40 @@ export default function ProfilePage() {
           </span>
           <span className="text-[10px] text-zinc-400 text-center">Ort. Puan</span>
         </div>
+      </div>
+
+      {/* Friends List */}
+      <div className="px-4 mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Users size={16} className="text-zinc-400" />
+          <h2 className="text-sm font-semibold text-zinc-300">Arkadaşlarım</h2>
+        </div>
+        {friends.length > 0 ? (
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {friends.map((friend) => (
+              <Link 
+                key={friend.id} 
+                href={`/u/${friend.uid}`}
+                className="flex flex-col items-center gap-2 shrink-0 w-16"
+              >
+                <div className="w-14 h-14 rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center border border-zinc-700">
+                  {friend.photoURL ? (
+                    <Image src={friend.photoURL} alt={friend.displayName || ""} width={56} height={56} className="object-cover" />
+                  ) : (
+                    <span className="text-xl font-bold text-zinc-500">{friend.displayName?.[0]?.toUpperCase() || "?"}</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-zinc-400 truncate w-full text-center">
+                  {friend.displayName?.split(" ")[0]}
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-zinc-900/40 border border-zinc-800/40 rounded-xl p-4 text-center">
+            <p className="text-xs text-zinc-500">Henüz kimseyi eklemediniz. Arkadaşlarınızı ekleyerek listelerini görebilirsiniz!</p>
+          </div>
+        )}
       </div>
 
       {/* Recently Watched */}
@@ -149,6 +221,21 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* TMDB Attribution */}
+      <div className="mt-12 mb-8 px-4 flex flex-col items-center text-center gap-3">
+        <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" className="opacity-80 hover:opacity-100 transition-opacity">
+          <img 
+            src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" 
+            alt="TMDB Logo" 
+            width={120} 
+            height={16} 
+          />
+        </a>
+        <p className="text-[10px] text-zinc-500 max-w-[250px]">
+          Bu uygulama TMDB API'sini kullanmaktadır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır.
+        </p>
+      </div>
     </div>
   );
 }

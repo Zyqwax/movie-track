@@ -52,6 +52,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // For TMDB Images, use Cache First strategy and save to cache
+  if (event.request.url.includes("image.tmdb.org")) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then((networkResponse) => {
+          // Only cache successful image responses
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open("movie-tracker-images-v1").then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        });
+      })
+    );
+    return;
+  }
+
   // For navigation requests (HTML), try network first, fallback to offline URL
   if (event.request.mode === "navigate") {
     event.respondWith(

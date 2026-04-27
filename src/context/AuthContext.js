@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const AuthContext = createContext({});
 
@@ -13,8 +14,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      if (user) {
+        // Save basic profile info to Firestore for public profiles
+        try {
+          await setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            email: user.email,
+            lastSeen: serverTimestamp()
+          }, { merge: true });
+        } catch (error) {
+          console.error("Error saving user profile to Firestore:", error);
+        }
+      }
       setLoading(false);
     });
 
