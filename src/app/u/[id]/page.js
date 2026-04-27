@@ -108,13 +108,22 @@ export default function PublicProfilePage(props) {
   const handleToggleFriend = async () => {
     try {
       const friendRef = doc(db, "users", user.uid, "friends", targetUid);
+      const reverseFriendRef = doc(db, "users", targetUid, "friends", user.uid);
+      
       if (isFriend) {
         await deleteDoc(friendRef);
+        await deleteDoc(reverseFriendRef);
       } else {
         await setDoc(friendRef, {
           uid: targetUid,
           displayName: targetUser.displayName || "",
           photoURL: targetUser.photoURL || "",
+          addedAt: serverTimestamp()
+        });
+        await setDoc(reverseFriendRef, {
+          uid: user.uid,
+          displayName: user.displayName || "",
+          photoURL: user.photoURL || "",
           addedAt: serverTimestamp()
         });
       }
@@ -178,12 +187,12 @@ export default function PublicProfilePage(props) {
           {isFriend ? (
             <>
               <UserMinus size={16} />
-              Takipten Çık
+              Arkadaştan Çıkar
             </>
           ) : (
             <>
               <UserPlus size={16} />
-              Takip Et
+              Arkadaş Ekle
             </>
           )}
         </button>
