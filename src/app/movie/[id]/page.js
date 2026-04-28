@@ -335,7 +335,7 @@ export default function MovieDetailPage({ params }) {
                 disabled={saving}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-zinc-800 text-white rounded-xl text-sm font-medium hover:bg-zinc-700 transition"
               >
-                <PlusCircle size={18} /> İstek Listesine Ekle
+                <PlusCircle size={18} /> İzleme Listesine Ekle
               </button>
             ) : (
               <div className="w-full flex items-center justify-between px-2">
@@ -346,7 +346,7 @@ export default function MovieDetailPage({ params }) {
                   )}
                 >
                   {userData.status === "watched" ? <CheckCircle size={18} /> : <PlusCircle size={18} />}
-                  {userData.status === "watched" ? "İzlendi" : "İstek Listesinde"}
+                  {userData.status === "watched" ? "İzlendi" : "İzleme Listesinde"}
                 </span>
 
                 <div className="flex gap-2">
@@ -356,7 +356,7 @@ export default function MovieDetailPage({ params }) {
                       disabled={saving}
                       className="p-2 bg-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/30 transition text-xs font-medium px-3"
                     >
-                      İstek Listesine Al
+                      İzleme Listesine Al
                     </button>
                   )}
                   {userData.status === "wishlist" && (

@@ -1,13 +1,14 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import { useAppData } from "@/context/AppDataContext";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState, use } from "react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, onSnapshot, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
-import { Film, Eye, Star, UserPlus, UserMinus, ChevronLeft } from "lucide-react";
+import { Film, Eye, Star, UserPlus, UserMinus, ChevronLeft, Check, Bookmark } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -23,6 +24,7 @@ export default function PublicProfilePage(props) {
   const targetUid = params.id;
   
   const { user } = useAuth();
+  const { movies: myMovies } = useAppData();
   const router = useRouter();
   
   const [targetUser, setTargetUser] = useState(null);
@@ -223,8 +225,8 @@ export default function PublicProfilePage(props) {
       {/* Tabs */}
       <div className="flex gap-2 px-4 mt-4">
         {[
-          { id: "watched", label: "İzledikleri" },
-          { id: "wishlist", label: "İzleyecekleri" }
+          { id: "watched", label: "İzlediği Filmler" },
+          { id: "wishlist", label: "İzleme Listesi" }
         ].map(tab => (
           <button
             key={tab.id}
@@ -250,34 +252,54 @@ export default function PublicProfilePage(props) {
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {sortedMovies.map((movie) => (
-              <Link
-                key={movie.id}
-                href={`/movie/${movie.id}`}
-                className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-zinc-800 block"
-              >
-                {movie.posterPath && (
-                  <Image
-                    src={`https://image.tmdb.org/t/p/w342${movie.posterPath}`}
-                    alt={movie.title}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80" />
-                <div className="absolute bottom-0 left-0 right-0 p-2">
-                  <p className="text-[10px] font-semibold text-white leading-tight line-clamp-2">
-                    {movie.title}
-                  </p>
-                  {activeTab === "watched" && movie.rating > 0 && (
-                    <div className="flex items-center gap-0.5 mt-0.5 text-amber-400 text-[9px] font-bold">
-                      <Star size={9} className="fill-amber-400" /> {movie.rating}
+            {sortedMovies.map((movie) => {
+              const myEntry = myMovies?.find((m) => m.id === movie.id);
+              const myStatus = myEntry?.status;
+
+              return (
+                <Link
+                  key={movie.id}
+                  href={`/movie/${movie.id}`}
+                  className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-zinc-800 block"
+                >
+                  {movie.posterPath && (
+                    <Image
+                      src={`https://image.tmdb.org/t/p/w342${movie.posterPath}`}
+                      alt={movie.title}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-80" />
+
+                  {/* My status badge */}
+                  {myStatus === "watched" && (
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-emerald-500/90 backdrop-blur-sm text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow">
+                      <Check size={8} strokeWidth={3} />
+                      İzledim
                     </div>
                   )}
-                </div>
-              </Link>
-            ))}
+                  {myStatus === "wishlist" && (
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-sky-500/90 backdrop-blur-sm text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full shadow">
+                      <Bookmark size={8} strokeWidth={3} />
+                      Listende
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-0 left-0 right-0 p-2">
+                    <p className="text-[10px] font-semibold text-white leading-tight line-clamp-2">
+                      {movie.title}
+                    </p>
+                    {activeTab === "watched" && movie.rating > 0 && (
+                      <div className="flex items-center gap-0.5 mt-0.5 text-amber-400 text-[9px] font-bold">
+                        <Star size={9} className="fill-amber-400" /> {movie.rating}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

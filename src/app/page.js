@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { collection, query, onSnapshot } from "firebase/firestore";
 import { Star, Image as ImageIcon, Play, ArrowUpDown, ChevronDown, Dices } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -50,23 +49,13 @@ function sortMovies(movies, sortKey) {
 
 export default function Home() {
   const { user } = useAuth();
+  const { movies } = useAppData();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window !== "undefined") {
       return sessionStorage.getItem("movieTracker_homeTab") || "wishlist";
     }
     return "wishlist";
-  });
-  const [movies, setMovies] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("movieTracker_moviesCache");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
-    }
-    return undefined;
   });
   const [sortKey, setSortKey] = useState(() => {
     if (typeof window !== "undefined") {
@@ -76,7 +65,6 @@ export default function Home() {
   });
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef(null);
-  // Track which direction the tab switched for animation
   const prevTabRef = useRef(activeTab);
   const [heroMovieId, setHeroMovieId] = useState(null);
 
@@ -100,19 +88,6 @@ export default function Home() {
   useEffect(() => {
     if (user === null) {
       router.push("/login");
-      return;
-    }
-    if (user) {
-      const q = query(collection(db, "users", user.uid, "movies"));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const data = [];
-        snapshot.forEach((d) => data.push({ id: d.id, ...d.data() }));
-        setMovies(data);
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("movieTracker_moviesCache", JSON.stringify(data));
-        }
-      });
-      return () => unsubscribe();
     }
   }, [user, router]);
 
@@ -202,7 +177,7 @@ export default function Home() {
               {movies !== undefined && (
                 <div className="hidden md:flex gap-3 shrink-0">
                   {[
-                    { label: "İzlenecek", count: movies.filter(m => m.status === "wishlist").length, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
+                    { label: "Listede", count: movies.filter(m => m.status === "wishlist").length, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
                     { label: "İzlendi", count: movies.filter(m => m.status === "watched").length, color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
                   ].map(s => (
                     <div key={s.label} className={`flex flex-col items-center justify-center w-24 h-20 rounded-2xl border backdrop-blur-sm ${s.bg}`}>
@@ -217,7 +192,7 @@ export default function Home() {
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2">
             <ImageIcon size={36} className="text-zinc-700" />
-            <p className="text-zinc-500 text-sm">İzlenecek listeniz boş</p>
+            <p className="text-zinc-500 text-sm">İzleme listeniz boş</p>
           </div>
         )}
       </div>
@@ -231,8 +206,8 @@ export default function Home() {
           {/* Tab Switcher — pill style */}
           <div className="flex gap-1.5 bg-zinc-900 border border-zinc-800 rounded-xl p-1 flex-1">
             {[
-              { label: "İzlenecekler", value: "wishlist" },
-              { label: "İzlenenler", value: "watched" },
+              { label: "İzleme Listem", value: "wishlist" },
+              { label: "İzlediklerim", value: "watched" },
             ].map((tab) => (
               <button
                 key={tab.value}

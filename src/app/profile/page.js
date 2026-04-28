@@ -1,10 +1,9 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, onSnapshot } from "firebase/firestore";
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LogOut, Film, Eye, Clock, Star, UserPlus, Users } from "lucide-react";
@@ -17,35 +16,12 @@ dayjs.locale("tr");
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
+  const { movies, friends } = useAppData();
   const router = useRouter();
-  const [movies, setMovies] = useState(undefined);
-  const [friends, setFriends] = useState([]);
 
   useEffect(() => {
     if (user === null) {
       router.push("/login");
-      return;
-    }
-
-    if (user) {
-      const q = query(collection(db, "users", user.uid, "movies"));
-      const unsubscribeMovies = onSnapshot(q, (snapshot) => {
-        const data = [];
-        snapshot.forEach((doc) => data.push({ id: doc.id, ...doc.data() }));
-        setMovies(data);
-      });
-
-      const friendsQ = query(collection(db, "users", user.uid, "friends"));
-      const unsubscribeFriends = onSnapshot(friendsQ, (snapshot) => {
-        const data = [];
-        snapshot.forEach((doc) => data.push({ id: doc.id, ...doc.data() }));
-        setFriends(data);
-      });
-
-      return () => {
-        unsubscribeMovies();
-        unsubscribeFriends();
-      };
     }
   }, [user, router]);
 
@@ -136,7 +112,7 @@ export default function ProfilePage() {
           <span className="text-2xl font-bold text-white">
             {movies === undefined ? "—" : wishlist.length}
           </span>
-          <span className="text-[10px] text-zinc-400 text-center">Listede Bekliyor</span>
+          <span className="text-[10px] text-zinc-400 text-center">İzleme Listesi</span>
         </div>
         <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-2xl p-4 flex flex-col items-center gap-1">
           <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center mb-1">
@@ -233,7 +209,7 @@ export default function ProfilePage() {
           />
         </a>
         <p className="text-[10px] text-zinc-500 max-w-[250px]">
-          Bu uygulama TMDB API'sini kullanmaktadır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır.
+          Bu uygulama TMDB API&apos;sini kullanmaktadır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır.
         </p>
       </div>
     </div>

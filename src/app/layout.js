@@ -43,6 +43,7 @@ export const viewport = {
 import BottomNav from "@/components/BottomNav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/context/AuthContext";
+import { AppDataProvider } from "@/context/AppDataContext";
 
 export default function RootLayout({ children }) {
   return (
@@ -54,10 +55,12 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50">
         <ServiceWorkerRegister />
         <AuthProvider>
-          <main className="flex-1 pb-16">
-            {children}
-          </main>
-          <BottomNav />
+          <AppDataProvider>
+            <main className="flex-1 pb-16">
+              {children}
+            </main>
+            <BottomNav />
+          </AppDataProvider>
         </AuthProvider>
       </body>
     </html>
