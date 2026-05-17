@@ -2,16 +2,18 @@
 
 import { useEffect, useState, use } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { fetchAndCacheMovie } from "@/lib/tmdb";
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, collection, addDoc, serverTimestamp, updateDoc, arrayUnion } from "firebase/firestore";
 import {
   ArrowLeft, Star, Calendar, Clock, CheckCircle, PlusCircle,
-  Trash2, History, CalendarDays, X, RotateCcw, TrendingUp
+  Trash2, History, CalendarDays, X, RotateCcw, TrendingUp, Forward
 } from "lucide-react";
 import Link from "next/link";
+import RecommendModal from "@/components/RecommendModal";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
@@ -68,7 +70,8 @@ function PastDateModal({ onConfirm, onClose }) {
 export default function MovieDetailPage({ params }) {
   const unwrappedParams = use(params);
   const movieId = unwrappedParams.id;
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { friends } = useAppData();
   const router = useRouter();
 
   const [movie, setMovie] = useState(null);
@@ -77,9 +80,10 @@ export default function MovieDetailPage({ params }) {
   const [review, setReview] = useState("");
   const [saving, setSaving] = useState(false);
   const [showPastModal, setShowPastModal] = useState(false);
+  const [showRecommendModal, setShowRecommendModal] = useState(false);
 
   useEffect(() => {
-    if (user === null) {
+    if (!authLoading && user === null) {
       router.push("/login");
       return;
     }
@@ -100,7 +104,7 @@ export default function MovieDetailPage({ params }) {
     }
 
     if (user) loadData();
-  }, [user, movieId, router]);
+  }, [user, authLoading, movieId, router]);
 
   /** Firestore'a kaydet — watchHistory array'ine yeni giriş ekle */
   const addWatchEntry = async (timestampMs) => {
@@ -124,6 +128,55 @@ export default function MovieDetailPage({ params }) {
 
     await setDoc(userMovieRef, newData, { merge: true });
     setUserData(newData);
+
+    // Log activity
+    try {
+      await addDoc(collection(db, "users", user.uid, "activities"), {
+        type: "watched",
+        movieId,
+        movieTitle: movie.title,
+        moviePoster: movie.posterPath,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) { console.error("Activity log error:", e); }
+
+    setSaving(false);
+  };
+
+  /** Tarih belirtmeden izledim */
+  const addWatchEntryNoDate = async () => {
+    setSaving(true);
+    const userMovieRef = doc(db, "users", user.uid, "movies", movieId);
+
+    const existingHistory = userData?.watchHistory || [];
+    const newEntry = { ts: null };
+    const newHistory = [newEntry, ...existingHistory];
+
+    const newData = {
+      title: movie.title,
+      posterPath: movie.posterPath,
+      status: "watched",
+      watchedAt: null,
+      watchHistory: newHistory,
+      rating: userData?.rating || 0,
+      review: review || "",
+      addedAt: userData?.addedAt || Date.now(),
+    };
+
+    await setDoc(userMovieRef, newData, { merge: true });
+    setUserData(newData);
+
+    // Log activity
+    try {
+      await addDoc(collection(db, "users", user.uid, "activities"), {
+        type: "watched",
+        movieId,
+        movieTitle: movie.title,
+        moviePoster: movie.posterPath,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) { console.error("Activity log error:", e); }
+
     setSaving(false);
   };
 
@@ -154,6 +207,18 @@ export default function MovieDetailPage({ params }) {
     };
     await setDoc(userMovieRef, newData, { merge: true });
     setUserData(newData);
+
+    // Log activity
+    try {
+      await addDoc(collection(db, "users", user.uid, "activities"), {
+        type: newStatus === "watched" ? "watched" : "wishlist",
+        movieId,
+        movieTitle: movie.title,
+        moviePoster: movie.posterPath,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) { console.error("Activity log error:", e); }
+
     setSaving(false);
   };
 
@@ -183,6 +248,18 @@ export default function MovieDetailPage({ params }) {
     const newData = { ...userData, rating };
     setUserData(newData);
     await setDoc(doc(db, "users", user.uid, "movies", movieId), newData, { merge: true });
+
+    // Log activity
+    try {
+      await addDoc(collection(db, "users", user.uid, "activities"), {
+        type: "rated",
+        movieId,
+        movieTitle: movie.title,
+        moviePoster: movie.posterPath,
+        rating,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) { console.error("Activity log error:", e); }
   };
 
   const saveReview = async () => {
@@ -194,7 +271,7 @@ export default function MovieDetailPage({ params }) {
     setSaving(false);
   };
 
-  if (!user || loading) {
+  if (authLoading || !user || loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-zinc-950">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div>
@@ -214,6 +291,51 @@ export default function MovieDetailPage({ params }) {
         <PastDateModal
           onConfirm={handlePastDate}
           onClose={() => setShowPastModal(false)}
+        />
+      )}
+
+      {showRecommendModal && movie && (
+        <RecommendModal
+          friends={friends}
+          movieTitle={movie.title}
+          onClose={() => setShowRecommendModal(false)}
+          onSelect={async (friendUid) => {
+            // Create or get chat
+            const chatId = [user.uid, friendUid].sort().join("_");
+            const chatRef = doc(db, "chats", chatId);
+            const chatSnap = await getDoc(chatRef);
+
+            if (!chatSnap.exists()) {
+              await setDoc(chatRef, {
+                participants: [user.uid, friendUid].sort(),
+                lastMessage: `🎬 ${movie.title}`,
+                lastMessageAt: serverTimestamp(),
+                lastMessageSenderId: user.uid,
+                unreadBy: [friendUid],
+              });
+            } else {
+              await updateDoc(chatRef, {
+                lastMessage: `🎬 ${movie.title}`,
+                lastMessageAt: serverTimestamp(),
+                lastMessageSenderId: user.uid,
+                unreadBy: arrayUnion(friendUid),
+              });
+            }
+
+            // Send movie recommendation message
+            await addDoc(collection(db, "chats", chatId, "messages"), {
+              senderId: user.uid,
+              text: "",
+              type: "movie_recommendation",
+              movieId,
+              movieTitle: movie.title,
+              moviePoster: movie.posterPath,
+              createdAt: serverTimestamp(),
+            });
+
+            setShowRecommendModal(false);
+            router.push(`/messages/${chatId}`);
+          }}
         />
       )}
 
@@ -299,9 +421,7 @@ export default function MovieDetailPage({ params }) {
           <div className="md:sticky md:top-6 md:self-start space-y-3 mb-6 md:mb-0">
         {/* ─── Action Buttons ─── */}
         <div className="space-y-3">
-          {/* İzleme butonları — 3 durum:
-              1) İzlenmediyse (userData yok veya wishlist): "İzledim" + "Önceden İzledim"
-              2) İzlendiyse (watched): "Tekrar İzledim" + "Önceden İzledim" */}
+          {/* İzleme butonları */}
           <div className="flex gap-2">
             <button
               id="watch-now-btn"
@@ -323,9 +443,19 @@ export default function MovieDetailPage({ params }) {
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-800 text-zinc-200 rounded-2xl text-sm font-semibold hover:bg-zinc-700 active:scale-95 transition-all border border-zinc-700"
             >
               <CalendarDays size={17} />
-              {userData?.status === "watched" ? "Geçmiş Tarih Ekle" : "Önceden İzledim"}
+              {userData?.status === "watched" ? "Geçmiş Tarih" : "Tarih Seç"}
             </button>
           </div>
+
+          {/* Tarih belirtmeden izledim */}
+          <button
+            onClick={addWatchEntryNoDate}
+            disabled={saving}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-zinc-900 text-zinc-400 rounded-2xl text-xs font-medium hover:bg-zinc-800 hover:text-zinc-200 active:scale-[0.98] transition-all border border-zinc-800/50"
+          >
+            <CheckCircle size={14} />
+            Ne zaman izledim bilmiyorum
+          </button>
 
           {/* İstek listesi / Durum / Kaldır */}
           <div className="flex gap-2 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
@@ -380,6 +510,15 @@ export default function MovieDetailPage({ params }) {
             )}
           </div>
         </div>
+
+          {/* ─── Arkadaşa Öner ─── */}
+          <button
+            onClick={() => setShowRecommendModal(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-zinc-900 text-zinc-200 rounded-2xl text-sm font-semibold hover:bg-zinc-800 active:scale-95 transition-all border border-zinc-800"
+          >
+            <Forward size={17} />
+            Arkadaşa Öner
+          </button>
 
         {/* ─── Rating & Review (in sidebar on desktop) ─── */}
         {userData?.status === "watched" && (

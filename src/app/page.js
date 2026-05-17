@@ -40,6 +40,15 @@ function sortMovies(movies, sortKey) {
         ? (a.title || "").localeCompare(b.title || "", "tr")
         : (b.title || "").localeCompare(a.title || "", "tr");
     }
+    // For watchedAt: push null/0 values to the bottom always
+    if (field === "watchedAt") {
+      const aHas = a.watchedAt != null && a.watchedAt !== 0;
+      const bHas = b.watchedAt != null && b.watchedAt !== 0;
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+      if (!aHas && !bHas) return 0;
+      return dir === "asc" ? a.watchedAt - b.watchedAt : b.watchedAt - a.watchedAt;
+    }
     const aVal = a[field] || 0;
     const bVal = b[field] || 0;
     return dir === "asc" ? aVal - bVal : bVal - aVal;
@@ -48,7 +57,7 @@ function sortMovies(movies, sortKey) {
 }
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { movies } = useAppData();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(() => {
@@ -86,10 +95,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (user === null) {
+    if (!loading && user === null) {
       router.push("/login");
     }
-  }, [user, router]);
+  }, [user, loading, router]);
 
   // Close sort dropdown on outside click
   useEffect(() => {
@@ -102,6 +111,7 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  if (loading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" /></div>;
   if (!user) return null;
 
   const handleTabChange = (tab) => {
@@ -293,8 +303,13 @@ export default function Home() {
                   <p className="text-sm">Bu listede henüz film yok.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 pb-4">
-                  {filteredMovies.map((movie) => (
+                (() => {
+                  // Split into dated/undated groups when sorting by watchedAt
+                  const isByDate = sortKey.startsWith("watchedAt") && activeTab === "watched";
+                  const datedMovies = isByDate ? filteredMovies.filter(m => m.watchedAt != null && m.watchedAt !== 0) : filteredMovies;
+                  const undatedMovies = isByDate ? filteredMovies.filter(m => m.watchedAt == null || m.watchedAt === 0) : [];
+
+                  const MovieCard = ({ movie }) => (
                     <Link
                       key={movie.id}
                       href={`/movie/${movie.id}`}
@@ -327,14 +342,39 @@ export default function Home() {
                           </div>
                         )}
                         {activeTab === "watched" && movie.watchedAt && (
-                          <p className="text-[8px] text-zinc-400 truncate hidden sm:block">
+                          <p className="text-[8px] text-zinc-400 truncate mt-0.5">
                             {dayjs(movie.watchedAt).fromNow()}
                           </p>
                         )}
                       </div>
                     </Link>
-                  ))}
-                </div>
+                  );
+
+                  return (
+                    <>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 pb-4">
+                        {datedMovies.map((movie) => (
+                          <MovieCard key={movie.id} movie={movie} />
+                        ))}
+                      </div>
+
+                      {undatedMovies.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-3 my-4">
+                            <div className="flex-1 h-px bg-zinc-800" />
+                            <span className="text-[10px] text-zinc-500 font-medium shrink-0">Tarih Belirtilmemiş</span>
+                            <div className="flex-1 h-px bg-zinc-800" />
+                          </div>
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 pb-4">
+                            {undatedMovies.map((movie) => (
+                              <MovieCard key={movie.id} movie={movie} />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()
               )}
           </div>
         )}

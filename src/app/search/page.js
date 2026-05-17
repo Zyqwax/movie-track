@@ -12,7 +12,7 @@ const DEBOUNCE_MS = 400;
 const SUGGESTION_COUNT = 6;
 
 export default function SearchPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { movies: localMovies } = useAppData();
   const router = useRouter();
 
@@ -51,14 +51,14 @@ export default function SearchPage() {
   const suggestionsRef = useRef(null);
 
   useEffect(() => {
-    if (user === null) {
+    if (!authLoading && user === null) {
       router.push("/login");
       return;
     }
     if (user) {
       fetchTrending();
     }
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   // Close suggestions on outside click
   useEffect(() => {
@@ -183,6 +183,7 @@ export default function SearchPage() {
     }
   };
 
+  if (authLoading) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" /></div>;
   if (!user) return null;
 
   const displayMovies = queryInput.trim() ? results : trending;

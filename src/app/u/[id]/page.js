@@ -8,7 +8,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, onSnapshot, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
-import { Film, Eye, Star, UserPlus, UserMinus, ChevronLeft, Check, Bookmark } from "lucide-react";
+import { Film, Eye, Star, UserPlus, UserMinus, ChevronLeft, Check, Bookmark, MessageCircle } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -135,6 +135,28 @@ export default function PublicProfilePage(props) {
     }
   };
 
+  const handleStartChat = async () => {
+    try {
+      const chatId = [user.uid, targetUid].sort().join("_");
+      const chatRef = doc(db, "chats", chatId);
+      const chatSnap = await getDoc(chatRef);
+
+      if (!chatSnap.exists()) {
+        await setDoc(chatRef, {
+          participants: [user.uid, targetUid].sort(),
+          lastMessage: "",
+          lastMessageAt: serverTimestamp(),
+          lastMessageSenderId: "",
+        });
+      }
+
+      router.push(`/messages/${chatId}`);
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      alert("Sohbet başlatılırken bir hata oluştu.");
+    }
+  };
+
   const watched = movies?.filter((m) => m.status === "watched") || [];
   const wishlist = movies?.filter((m) => m.status === "wishlist") || [];
   const ratedMovies = watched.filter((m) => m.rating > 0);
@@ -146,7 +168,14 @@ export default function PublicProfilePage(props) {
   
   // Sort movies by date descending
   const sortedMovies = [...displayMovies].sort((a, b) => {
-    if (activeTab === "watched") return (b.watchedAt || 0) - (a.watchedAt || 0);
+    if (activeTab === "watched") {
+      const aHas = a.watchedAt != null && a.watchedAt !== 0;
+      const bHas = b.watchedAt != null && b.watchedAt !== 0;
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+      if (!aHas && !bHas) return 0;
+      return (b.watchedAt || 0) - (a.watchedAt || 0);
+    }
     return (b.addedAt || 0) - (a.addedAt || 0);
   });
 
@@ -177,27 +206,39 @@ export default function PublicProfilePage(props) {
           </h2>
         </div>
         
-        <button
-          onClick={handleToggleFriend}
-          className={clsx(
-            "mt-2 px-6 py-2.5 rounded-full font-semibold text-sm flex items-center gap-2 transition-all shadow-lg",
-            isFriend 
-              ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
-              : "bg-rose-600 text-white hover:bg-rose-500 shadow-rose-500/20"
+        <div className="flex gap-2 mt-2 w-full max-w-xs justify-center">
+          <button
+            onClick={handleToggleFriend}
+            className={clsx(
+              "px-5 py-2.5 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg flex-1",
+              isFriend 
+                ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+                : "bg-rose-600 text-white hover:bg-rose-500 shadow-rose-500/20"
+            )}
+          >
+            {isFriend ? (
+              <>
+                <UserMinus size={16} />
+                Çıkar
+              </>
+            ) : (
+              <>
+                <UserPlus size={16} />
+                Arkadaş Ekle
+              </>
+            )}
+          </button>
+
+          {isFriend && (
+            <button
+              onClick={handleStartChat}
+              className="px-5 py-2.5 bg-rose-600 text-white hover:bg-rose-500 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-500/20 flex-1 animate-fade-in"
+            >
+              <MessageCircle size={16} />
+              Mesaj Gönder
+            </button>
           )}
-        >
-          {isFriend ? (
-            <>
-              <UserMinus size={16} />
-              Arkadaştan Çıkar
-            </>
-          ) : (
-            <>
-              <UserPlus size={16} />
-              Arkadaş Ekle
-            </>
-          )}
-        </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -251,8 +292,12 @@ export default function PublicProfilePage(props) {
             <p className="text-sm">Bu liste boş.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {sortedMovies.map((movie) => {
+          (() => {
+            const isByDate = activeTab === "watched";
+            const datedMovies = isByDate ? sortedMovies.filter(m => m.watchedAt != null && m.watchedAt !== 0) : sortedMovies;
+            const undatedMovies = isByDate ? sortedMovies.filter(m => m.watchedAt == null || m.watchedAt === 0) : [];
+
+            const MovieCard = ({ movie }) => {
               const myEntry = myMovies?.find((m) => m.id === movie.id);
               const myStatus = myEntry?.status;
 
@@ -296,11 +341,41 @@ export default function PublicProfilePage(props) {
                         <Star size={9} className="fill-amber-400" /> {movie.rating}
                       </div>
                     )}
+                    {activeTab === "watched" && movie.watchedAt && (
+                      <p className="text-[8px] text-zinc-400 truncate mt-0.5">
+                        {dayjs(movie.watchedAt).fromNow()}
+                      </p>
+                    )}
                   </div>
                 </Link>
               );
-            })}
-          </div>
+            };
+
+            return (
+              <>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {datedMovies.map((movie) => (
+                    <MovieCard key={movie.id} movie={movie} />
+                  ))}
+                </div>
+
+                {undatedMovies.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-3 my-4">
+                      <div className="flex-1 h-px bg-zinc-800" />
+                      <span className="text-[10px] text-zinc-500 font-medium shrink-0">Tarih Belirtilmemiş</span>
+                      <div className="flex-1 h-px bg-zinc-800" />
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                      {undatedMovies.map((movie) => (
+                        <MovieCard key={movie.id} movie={movie} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            );
+          })()
         )}
       </div>
       
