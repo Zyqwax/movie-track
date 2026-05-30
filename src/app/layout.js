@@ -44,6 +44,7 @@ import BottomNav from "@/components/BottomNav";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/context/AuthContext";
 import { AppDataProvider } from "@/context/AppDataContext";
+import MainContentWrapper from "@/components/MainContentWrapper";
 
 export default function RootLayout({ children }) {
   return (
@@ -56,9 +57,9 @@ export default function RootLayout({ children }) {
         <ServiceWorkerRegister />
         <AuthProvider>
           <AppDataProvider>
-            <main className="flex-1 pb-16">
+            <MainContentWrapper>
               {children}
-            </main>
+            </MainContentWrapper>
             <BottomNav />
           </AppDataProvider>
         </AuthProvider>

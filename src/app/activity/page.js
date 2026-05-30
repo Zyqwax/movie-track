@@ -168,7 +168,7 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="min-h-full bg-zinc-950 text-zinc-50 max-w-2xl mx-auto">
+    <div className="min-h-full bg-zinc-950 text-zinc-50">
       {/* Header */}
       <div className="px-4 pt-10 pb-3 flex items-end justify-between">
         <div>
