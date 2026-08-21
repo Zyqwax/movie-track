@@ -1,0 +1,386 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useAppData } from "@/context/AppDataContext";
+import { useRouter } from "next/navigation";
+import { Star, Image as ImageIcon, Play, ArrowUpDown, ChevronDown, Dices } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import clsx from "clsx";
+import dayjs from "dayjs";
+import "dayjs/locale/tr";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
+dayjs.locale("tr");
+
+const SORT_OPTIONS = {
+  wishlist: [
+    { label: "En Son Eklenen", value: "addedAt_desc" },
+    { label: "En Eski Eklenen", value: "addedAt_asc" },
+    { label: "İsme Göre (A→Z)", value: "title_asc" },
+    { label: "İsme Göre (Z→A)", value: "title_desc" },
+  ],
+  watched: [
+    { label: "En Son İzlenen", value: "watchedAt_desc" },
+    { label: "En Eski İzlenen", value: "watchedAt_asc" },
+    { label: "En Yüksek Puan", value: "rating_desc" },
+    { label: "En Düşük Puan", value: "rating_asc" },
+    { label: "İsme Göre (A→Z)", value: "title_asc" },
+  ],
+};
+
+function sortMovies(movies, sortKey) {
+  const sorted = [...movies];
+  const [field, dir] = sortKey.split("_");
+  sorted.sort((a, b) => {
+    if (field === "title") {
+      return dir === "asc"
+        ? (a.title || "").localeCompare(b.title || "", "tr")
+        : (b.title || "").localeCompare(a.title || "", "tr");
+    }
+    // For watchedAt: push null/0 values to the bottom always
+    if (field === "watchedAt") {
+      const aHas = a.watchedAt != null && a.watchedAt !== 0;
+      const bHas = b.watchedAt != null && b.watchedAt !== 0;
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+      if (!aHas && !bHas) return 0;
+      return dir === "asc" ? a.watchedAt - b.watchedAt : b.watchedAt - a.watchedAt;
+    }
+    const aVal = a[field] || 0;
+    const bVal = b[field] || 0;
+    return dir === "asc" ? aVal - bVal : bVal - aVal;
+  });
+  return sorted;
+}
+
+export default function Home() {
+  const { user, loading } = useAuth();
+  const { movies } = useAppData();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("movieTracker_homeTab") || "wishlist";
+    }
+    return "wishlist";
+  });
+  const [sortKey, setSortKey] = useState(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("movieTracker_homeSortKey") || "addedAt_desc";
+    }
+    return "addedAt_desc";
+  });
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef(null);
+  const prevTabRef = useRef(activeTab);
+  const [heroMovieId, setHeroMovieId] = useState(null);
+
+  useEffect(() => {
+    if (movies && !heroMovieId) {
+      const wishlist = movies.filter((m) => m.status === "wishlist");
+      if (wishlist.length > 0) {
+        setHeroMovieId(wishlist[Math.floor(Math.random() * wishlist.length)].id);
+      }
+    }
+  }, [movies, heroMovieId]);
+
+  const handleShuffleHero = () => {
+    if (!movies) return;
+    const wishlist = movies.filter((m) => m.status === "wishlist");
+    if (wishlist.length > 0) {
+      setHeroMovieId(wishlist[Math.floor(Math.random() * wishlist.length)].id);
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && user === null) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  // Close sort dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (sortRef.current && !sortRef.current.contains(e.target)) {
+        setSortOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  if (loading) return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" />
+    </div>
+  );
+  if (!user) return null;
+
+  const handleTabChange = (tab) => {
+    prevTabRef.current = activeTab;
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("movieTracker_homeTab", tab);
+    }
+
+    // Reset to sensible default sort for each tab
+    const newSort = tab === "wishlist" ? "addedAt_desc" : "watchedAt_desc";
+    setSortKey(newSort);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("movieTracker_homeSortKey", newSort);
+    }
+    setSortOpen(false);
+  };
+
+  const baseMovies = movies?.filter((m) => m.status === activeTab) || [];
+  const filteredMovies = sortMovies(baseMovies, sortKey);
+  const wishlistMovies = movies?.filter((m) => m.status === "wishlist") || [];
+  const heroMovie = heroMovieId
+    ? wishlistMovies.find((m) => m.id === heroMovieId) || wishlistMovies[0]
+    : wishlistMovies[0];
+  const currentSortOptions = SORT_OPTIONS[activeTab];
+  const currentSortLabel = currentSortOptions.find((o) => o.value === sortKey)?.label;
+
+  const MovieCard = ({ movie }) => (
+    <Link
+      href={`/movie/${movie.id}`}
+      className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-zinc-900 block shadow-sm hover:shadow-lg transition-shadow duration-300"
+    >
+      {movie.posterPath ? (
+        <Image
+          src={`https://image.tmdb.org/t/p/w342${movie.posterPath}`}
+          alt={movie.title}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          unoptimized
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
+          <ImageIcon className="text-zinc-600 mb-1" size={20} />
+          <span className="text-[9px] text-zinc-500 leading-tight">{movie.title}</span>
+        </div>
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+      {activeTab === "watched" && movie.rating > 0 && (
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-amber-500/90 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded-full shadow z-10">
+          <Star size={7} className="fill-white" /> {movie.rating}
+        </div>
+      )}
+
+      <div className="absolute bottom-0 left-0 right-0 p-2">
+        <p className="text-[9px] sm:text-[10px] font-semibold text-white leading-tight line-clamp-2 mb-1">
+          {movie.title}
+        </p>
+        {activeTab === "watched" && movie.watchedAt && (
+          <p className="text-[8px] text-zinc-400 truncate">
+            {dayjs(movie.watchedAt).fromNow()}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+
+  return (
+    <div className="min-h-full flex flex-col bg-zinc-950">
+
+      {/* ── Hero Section ─────────────────────────────────────────────── */}
+      <div className="relative w-full h-[42vh] md:h-[52vh] bg-zinc-900 overflow-hidden flex items-end">
+        {heroMovie ? (
+          <>
+            <Image
+              src={`https://image.tmdb.org/t/p/original${heroMovie.posterPath}`}
+              alt={heroMovie.title}
+              fill
+              className="object-cover opacity-40"
+              unoptimized
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/60 via-transparent to-transparent hidden md:block" />
+
+            {/* Hero content */}
+            <div className="relative z-10 w-full max-w-6xl mx-auto px-4 md:px-8 pb-6 md:pb-10 flex items-end justify-between gap-8">
+              <div className="flex-1 max-w-lg">
+                <span className="px-2.5 py-1 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-3 inline-block">
+                  🎲 Şanslı Film
+                </span>
+                <h2 className="text-xl md:text-4xl font-bold text-white mb-3 leading-tight drop-shadow-lg line-clamp-2">
+                  {heroMovie.title}
+                </h2>
+                <div className="flex gap-2 items-center mt-2">
+                  <Link
+                    href={`/movie/${heroMovie.id}`}
+                    className="inline-flex items-center gap-2 bg-white text-zinc-950 px-4 py-2 rounded-full font-semibold text-sm hover:bg-zinc-100 active:scale-95 transition-all"
+                  >
+                    <Play size={14} fill="currentColor" />
+                    Detaylar
+                  </Link>
+                  <button
+                    onClick={handleShuffleHero}
+                    className="p-2 bg-zinc-800/80 backdrop-blur-md text-white rounded-full hover:bg-zinc-700 active:scale-90 transition-all border border-zinc-700/50 flex items-center justify-center group cursor-pointer"
+                    title="Karıştır"
+                  >
+                    <Dices size={17} className="group-hover:rotate-180 transition-transform duration-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Desktop: stats panel */}
+              {movies !== undefined && (
+                <div className="hidden md:flex gap-3 shrink-0">
+                  {[
+                    { label: "Listede", count: movies.filter((m) => m.status === "wishlist").length, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
+                    { label: "İzlendi", count: movies.filter((m) => m.status === "watched").length, color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/20" },
+                  ].map((s) => (
+                    <div key={s.label} className={`flex flex-col items-center justify-center w-24 h-20 rounded-2xl border backdrop-blur-sm ${s.bg}`}>
+                      <span className={`text-2xl font-bold ${s.color}`}>{s.count}</span>
+                      <span className="text-[11px] text-zinc-400 mt-0.5">{s.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+            <ImageIcon size={36} className="text-zinc-700" />
+            <p className="text-zinc-500 text-sm">İzleme listeniz boş</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Sticky Tab + Sort Bar ─────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-900/60 px-4 py-3">
+        <div className="flex items-center gap-3 max-w-6xl mx-auto">
+
+          {/* Tab Switcher */}
+          <div className="flex gap-1 bg-zinc-900 border border-zinc-800/60 rounded-xl p-1 flex-1">
+            {[
+              { label: "İzleme Listem", value: "wishlist" },
+              { label: "İzlediklerim", value: "watched" },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => handleTabChange(tab.value)}
+                className={clsx(
+                  "relative flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-250 flex items-center justify-center gap-1.5",
+                  activeTab === tab.value
+                    ? "text-white bg-zinc-700/90 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-300"
+                )}
+              >
+                <span>{tab.label}</span>
+                {movies !== undefined && (
+                  <span className={clsx(
+                    "text-[9px] font-bold px-1.5 py-0.5 rounded-full transition-colors",
+                    activeTab === tab.value ? "bg-rose-500/25 text-rose-400" : "bg-zinc-800 text-zinc-600"
+                  )}>
+                    {movies.filter((m) => m.status === tab.value).length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="relative shrink-0" ref={sortRef}>
+            <button
+              onClick={() => setSortOpen((v) => !v)}
+              className={clsx(
+                "flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-colors",
+                sortOpen
+                  ? "bg-zinc-800 border-zinc-600 text-white"
+                  : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+              )}
+            >
+              <ArrowUpDown size={13} />
+              <span className="hidden sm:inline max-w-[90px] truncate">{currentSortLabel}</span>
+              <ChevronDown size={13} className={clsx("transition-transform", sortOpen && "rotate-180")} />
+            </button>
+
+            {sortOpen && (
+              <div className="absolute right-0 top-full mt-2 w-52 bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-xl shadow-black/40 overflow-hidden z-50 animate-fade-in">
+                {currentSortOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setSortKey(opt.value);
+                      if (typeof window !== "undefined") {
+                        sessionStorage.setItem("movieTracker_homeSortKey", opt.value);
+                      }
+                      setSortOpen(false);
+                    }}
+                    className={clsx(
+                      "w-full text-left px-4 py-3 text-xs transition-colors flex items-center gap-2",
+                      sortKey === opt.value
+                        ? "text-white font-semibold bg-zinc-800"
+                        : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+                    )}
+                  >
+                    {sortKey === opt.value && <span className="text-rose-400 shrink-0">✓</span>}
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Movie Grid ───────────────────────────────────────────────── */}
+      <div className="flex-1 w-full max-w-6xl mx-auto px-3 md:px-8 pt-4">
+        {movies === undefined ? (
+          <div className="flex justify-center my-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" />
+          </div>
+        ) : (
+          <div key={activeTab} className="animate-fade-in">
+            {filteredMovies.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-zinc-500 py-20">
+                <div className="w-16 h-16 mb-4 rounded-full bg-zinc-900 flex items-center justify-center">
+                  <ImageIcon className="w-8 h-8 opacity-40" />
+                </div>
+                <p className="text-sm font-medium">Bu listede henüz film yok.</p>
+                <p className="text-xs text-zinc-600 mt-1">Keşfet bölümünden film ekleyebilirsin!</p>
+              </div>
+            ) : (
+              (() => {
+                const isByDate = sortKey.startsWith("watchedAt") && activeTab === "watched";
+                const datedMovies = isByDate ? filteredMovies.filter((m) => m.watchedAt != null && m.watchedAt !== 0) : filteredMovies;
+                const undatedMovies = isByDate ? filteredMovies.filter((m) => m.watchedAt == null || m.watchedAt === 0) : [];
+
+                return (
+                  <>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 pb-4">
+                      {datedMovies.map((movie) => (
+                        <MovieCard key={movie.id} movie={movie} />
+                      ))}
+                    </div>
+
+                    {undatedMovies.length > 0 && (
+                      <>
+                        <div className="flex items-center gap-3 my-4">
+                          <div className="flex-1 h-px bg-zinc-800" />
+                          <span className="text-[10px] text-zinc-500 font-medium shrink-0">Tarih Belirtilmemiş</span>
+                          <div className="flex-1 h-px bg-zinc-800" />
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2.5 pb-4">
+                          {undatedMovies.map((movie) => (
+                            <MovieCard key={movie.id} movie={movie} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
