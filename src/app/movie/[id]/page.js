@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import RecommendModal from "@/components/RecommendModal";
+import { PerfStrip } from "@/components/ArchiveUI";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
@@ -44,7 +45,7 @@ function PastDateModal({ onConfirm, onClose }) {
           value={date}
           max={today}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white focus:ring-1 focus:ring-rose-500 focus:outline-none mb-5 [color-scheme:dark]"
+          className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white focus:ring-1 focus:ring-rose-500 focus:outline-none mb-5 scheme-dark"
         />
 
         <div className="flex gap-3">
@@ -130,15 +131,15 @@ export default function MovieDetailPage({ params }) {
     setUserData(newData);
 
     // Log activity
-    try {
-      await addDoc(collection(db, "users", user.uid, "activities"), {
-        type: "watched",
-        movieId,
-        movieTitle: movie.title,
-        moviePoster: movie.posterPath,
-        createdAt: serverTimestamp(),
-      });
-    } catch (e) { console.error("Activity log error:", e); }
+    // try {
+    //   await addDoc(collection(db, "users", user.uid, "activities"), {
+    //     type: "watched",
+    //     movieId,
+    //     movieTitle: movie.title,
+    //     moviePoster: movie.posterPath,
+    //     createdAt: serverTimestamp(),
+    //   });
+    // } catch (e) { console.error("Activity log error:", e); }
 
     setSaving(false);
   };
@@ -167,15 +168,15 @@ export default function MovieDetailPage({ params }) {
     setUserData(newData);
 
     // Log activity
-    try {
-      await addDoc(collection(db, "users", user.uid, "activities"), {
-        type: "watched",
-        movieId,
-        movieTitle: movie.title,
-        moviePoster: movie.posterPath,
-        createdAt: serverTimestamp(),
-      });
-    } catch (e) { console.error("Activity log error:", e); }
+    // try {
+    //   await addDoc(collection(db, "users", user.uid, "activities"), {
+    //     type: "watched",
+    //     movieId,
+    //     movieTitle: movie.title,
+    //     moviePoster: movie.posterPath,
+    //     createdAt: serverTimestamp(),
+    //   });
+    // } catch (e) { console.error("Activity log error:", e); }
 
     setSaving(false);
   };
@@ -209,15 +210,15 @@ export default function MovieDetailPage({ params }) {
     setUserData(newData);
 
     // Log activity
-    try {
-      await addDoc(collection(db, "users", user.uid, "activities"), {
-        type: newStatus === "watched" ? "watched" : "wishlist",
-        movieId,
-        movieTitle: movie.title,
-        moviePoster: movie.posterPath,
-        createdAt: serverTimestamp(),
-      });
-    } catch (e) { console.error("Activity log error:", e); }
+    // try {
+    //   await addDoc(collection(db, "users", user.uid, "activities"), {
+    //     type: newStatus === "watched" ? "watched" : "wishlist",
+    //     movieId,
+    //     movieTitle: movie.title,
+    //     moviePoster: movie.posterPath,
+    //     createdAt: serverTimestamp(),
+    //   });
+    // } catch (e) { console.error("Activity log error:", e); }
 
     setSaving(false);
   };
@@ -250,16 +251,16 @@ export default function MovieDetailPage({ params }) {
     await setDoc(doc(db, "users", user.uid, "movies", movieId), newData, { merge: true });
 
     // Log activity
-    try {
-      await addDoc(collection(db, "users", user.uid, "activities"), {
-        type: "rated",
-        movieId,
-        movieTitle: movie.title,
-        moviePoster: movie.posterPath,
-        rating,
-        createdAt: serverTimestamp(),
-      });
-    } catch (e) { console.error("Activity log error:", e); }
+    // try {
+    //   await addDoc(collection(db, "users", user.uid, "activities"), {
+    //     type: "rated",
+    //     movieId,
+    //     movieTitle: movie.title,
+    //     moviePoster: movie.posterPath,
+    //     rating,
+    //     createdAt: serverTimestamp(),
+    //   });
+    // } catch (e) { console.error("Activity log error:", e); }
   };
 
   const saveReview = async () => {
@@ -341,6 +342,7 @@ export default function MovieDetailPage({ params }) {
 
       {/* Backdrop Header */}
       <div className="relative w-full h-64 md:h-[55vh]">
+        <div className="absolute top-4 left-5 right-5 z-10"><PerfStrip className="top" /></div>
         {movie.backdropPath ? (
           <Image
             src={`https://image.tmdb.org/t/p/original${movie.backdropPath}`}
@@ -352,8 +354,8 @@ export default function MovieDetailPage({ params }) {
         ) : (
           <div className="w-full h-full bg-zinc-900" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/80 via-transparent to-transparent hidden md:block" />
+        <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/30 to-black/40" />
+        <div className="absolute inset-0 bg-linear-to-r from-zinc-950/80 via-transparent to-transparent hidden md:block" />
 
         <button onClick={() => router.back()} className="absolute top-5 left-5 p-2.5 bg-black/50 backdrop-blur-md rounded-full text-white hover:bg-black/70 transition">
           <ArrowLeft size={22} />
@@ -384,6 +386,7 @@ export default function MovieDetailPage({ params }) {
             </div>
           </div>
         </div>
+        <div className="absolute bottom-3 left-5 right-5 z-10"><PerfStrip /></div>
       </div>
 
       {/* Desktop two-column / Mobile single-column */}
@@ -427,7 +430,7 @@ export default function MovieDetailPage({ params }) {
               id="watch-now-btn"
               onClick={watchNow}
               disabled={saving}
-              className="flex-1 flex items-center justify-center py-3 bg-rose-600 text-white rounded-2xl text-sm font-semibold hover:bg-rose-500 active:scale-95 transition-all"
+              className="btn btn-gold flex-1"
             >
               {userData?.status === "watched" ? (
                 <span className="flex items-center gap-2"><RotateCcw size={17} /><span>Tekrar İzledim</span></span>
@@ -440,7 +443,7 @@ export default function MovieDetailPage({ params }) {
               id="watch-past-btn"
               onClick={() => setShowPastModal(true)}
               disabled={saving}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-800 text-zinc-200 rounded-2xl text-sm font-semibold hover:bg-zinc-700 active:scale-95 transition-all border border-zinc-700"
+              className="btn btn-ghost flex-1"
             >
               <CalendarDays size={17} />
               {userData?.status === "watched" ? "Geçmiş Tarih" : "Tarih Seç"}
@@ -451,7 +454,7 @@ export default function MovieDetailPage({ params }) {
           <button
             onClick={addWatchEntryNoDate}
             disabled={saving}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-zinc-900 text-zinc-400 rounded-2xl text-xs font-medium hover:bg-zinc-800 hover:text-zinc-200 active:scale-[0.98] transition-all border border-zinc-800/50"
+            className="btn btn-ghost w-full"
           >
             <CheckCircle size={14} />
             Ne zaman izledim bilmiyorum
@@ -463,7 +466,7 @@ export default function MovieDetailPage({ params }) {
               <button
                 onClick={() => updateStatus("wishlist")}
                 disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-zinc-800 text-white rounded-xl text-sm font-medium hover:bg-zinc-700 transition"
+                className="btn btn-gold flex-1"
               >
                 <PlusCircle size={18} /> İzleme Listesine Ekle
               </button>
@@ -514,7 +517,7 @@ export default function MovieDetailPage({ params }) {
           {/* ─── Arkadaşa Öner ─── */}
           <button
             onClick={() => setShowRecommendModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-zinc-900 text-zinc-200 rounded-2xl text-sm font-semibold hover:bg-zinc-800 active:scale-95 transition-all border border-zinc-800"
+            className="btn btn-ghost w-full"
           >
             <Forward size={17} />
             Arkadaşa Öner
@@ -543,7 +546,7 @@ export default function MovieDetailPage({ params }) {
               value={review}
               onChange={(e) => setReview(e.target.value)}
               placeholder="Film hakkında kişisel notlarınız veya incelemeniz..."
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-300 focus:ring-1 focus:ring-rose-500 focus:outline-none min-h-[100px] mb-2"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-300 focus:ring-1 focus:ring-rose-500 focus:outline-none min-h-25 mb-2"
             />
             {review !== (userData.review || "") && (
               <button

@@ -23,6 +23,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
 import clsx from "clsx";
+import ComingSoon from "@/components/ComingSoon";
 
 dayjs.extend(relativeTime);
 dayjs.locale("tr");
@@ -141,6 +142,8 @@ export default function MessagesPage() {
       </div>
     );
   }
+
+  return <ComingSoon />;
 
   return (
     <div className="min-h-full bg-zinc-950 flex flex-col">

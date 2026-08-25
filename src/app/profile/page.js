@@ -7,6 +7,8 @@ import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LogOut, Film, Eye, Clock, Star, Users, Share2, ChevronRight } from "lucide-react";
+import { UserAvatar } from "@/components/BottomNav";
+import { MovieCard } from "@/components/ArchiveUI";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -67,38 +69,21 @@ export default function ProfilePage() {
       {/* ── Profile Header ──────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
         {/* Banner gradient */}
-        <div className="h-24 w-full bg-gradient-to-br from-rose-950/50 via-zinc-900 to-indigo-950/30 relative">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-rose-500/20 via-transparent to-transparent" />
+        <div className="profile-banner">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,var(--tw-gradient-stops))] from-rose-500/20 via-transparent to-transparent" />
         </div>
 
         {/* Avatar + Info overlay */}
-        <div className="px-4 pb-4 border-b border-zinc-900/60">
+        <div className="px-4 pb-4 pt-12 border-b border-zinc-900/60">
           <div className="flex items-end gap-4 -mt-8 mb-4">
-            {/* Avatar */}
-            <div className="relative shrink-0 group">
-              <div className="absolute -inset-1 bg-gradient-to-br from-rose-500 to-[#5865f2] rounded-full blur opacity-50 group-hover:opacity-80 transition duration-300" />
-              <div className="relative w-20 h-20 rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden ring-3 ring-zinc-950 shadow-2xl">
-                {user.photoURL ? (
-                  <Image
-                    src={user.photoURL}
-                    alt={user.displayName || "User"}
-                    width={80}
-                    height={80}
-                    className="rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-3xl font-extrabold bg-gradient-to-br from-rose-400 to-rose-600 w-full h-full flex items-center justify-center text-white">
-                    {user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || "?"}
-                  </span>
-                )}
-              </div>
-            </div>
+            {/* Initials badge: personal archive mark, never a photo */}
+            <div className="profile-avatar-large"><UserAvatar user={user} /></div>
 
             {/* Action buttons - top right area */}
             <div className="flex-1 flex justify-end gap-2 pb-1">
               <button
                 onClick={handleShareProfile}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 active:scale-95 transition-all text-xs font-semibold"
+                className="btn btn-ghost"
                 title="Profili Paylaş"
               >
                 <Share2 size={13} strokeWidth={2.5} />
@@ -106,7 +91,7 @@ export default function ProfilePage() {
               </button>
               <button
                 onClick={logout}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-rose-400 hover:border-rose-500/40 active:scale-95 transition-all text-xs font-semibold"
+                className="btn btn-ghost"
                 title="Çıkış Yap"
               >
                 <LogOut size={13} strokeWidth={2.5} />
@@ -125,43 +110,12 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* ── Stats Row ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3 px-4 py-5 border-b border-zinc-900/40">
-        {[
-          {
-            icon: <Eye size={16} className="text-emerald-400" />,
-            bg: "bg-emerald-500/10",
-            value: movies === undefined ? "—" : watched.length,
-            label: "İzlendi",
-            color: "text-emerald-400",
-          },
-          {
-            icon: <Film size={15} className="text-rose-400" />,
-            bg: "bg-rose-500/10",
-            value: movies === undefined ? "—" : wishlist.length,
-            label: "Listede",
-            color: "text-rose-400",
-          },
-          {
-            icon: <Star size={14} className="text-amber-400 fill-amber-400/20" />,
-            bg: "bg-amber-500/10",
-            value: movies === undefined ? "—" : (avgRating || "—"),
-            label: "Ort. Puan",
-            color: "text-amber-400",
-          },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-3.5 flex flex-col items-center gap-1.5 hover:border-zinc-700/60 transition-colors"
-          >
-            <div className={`w-8 h-8 rounded-full ${stat.bg} flex items-center justify-center`}>
-              {stat.icon}
-            </div>
-            <span className={`text-xl font-black tracking-tight ${stat.color}`}>{stat.value}</span>
-            <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">{stat.label}</span>
-          </div>
-        ))}
-      </div>
+      {/* ── Ticket stub stats ───────────────────────────────────────── */}
+      <div className="profile-stats"><div className="stub-row">
+        <div className="stub"><span className="n">{movies === undefined ? "—" : watched.length}</span><span className="l">İzlendi</span></div>
+        <div className="stub"><span className="n">{movies === undefined ? "—" : wishlist.length}</span><span className="l">Listede</span></div>
+        <div className="stub"><span className="n">{movies === undefined ? "—" : (avgRating || "—")}</span><span className="l">Ort. Puan</span></div>
+      </div></div>
 
       {/* ── Friends Section ──────────────────────────────────────────── */}
       <div className="px-4 py-5 border-b border-zinc-900/40">
@@ -246,47 +200,8 @@ export default function ProfilePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
-            {recentlyWatched.map((movie) => (
-              <Link
-                key={movie.id}
-                href={`/movie/${movie.id}`}
-                className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-zinc-900 border border-zinc-900/60 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                {movie.posterPath ? (
-                  <Image
-                    src={`https://image.tmdb.org/t/p/w185${movie.posterPath}`}
-                    alt={movie.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition duration-400"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 text-zinc-700">
-                    <Film size={16} />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-
-                {movie.rating > 0 && (
-                  <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-amber-500/90 backdrop-blur-sm text-white text-[7px] font-black px-1.5 py-0.5 rounded-full shadow z-10">
-                    <Star size={6} className="fill-white" />
-                    <span>{movie.rating}</span>
-                  </div>
-                )}
-
-                <div className="absolute bottom-0 left-0 right-0 p-1.5">
-                  <p className="text-[9px] font-bold text-white leading-tight line-clamp-1">
-                    {movie.title}
-                  </p>
-                  {movie.watchedAt && (
-                    <span className="text-[7.5px] font-medium text-zinc-500">
-                      {dayjs(movie.watchedAt).fromNow()}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {recentlyWatched.map((movie) => <MovieCard key={movie.id} movie={movie} rating={movie.rating} subtitle={movie.watchedAt ? dayjs(movie.watchedAt).fromNow() : undefined} />)}
           </div>
         </div>
       )}
@@ -306,7 +221,7 @@ export default function ProfilePage() {
             height={11}
           />
         </a>
-        <p className="text-[9px] font-medium text-zinc-700 max-w-[220px] leading-relaxed">
+        <p className="text-[9px] font-medium text-zinc-700 max-w-55 leading-relaxed">
           Bu uygulama TMDB API&apos;sini kullanmaktadır ancak TMDB tarafından onaylanmamıştır.
         </p>
       </div>

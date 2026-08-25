@@ -37,12 +37,14 @@ export const AppDataProvider = ({ children }) => {
         unsubFriendsRef.current();
         unsubFriendsRef.current = null;
       }
-      setMovies(undefined);
-      setFriends([]);
-      setMoviesLoading(true);
-      setFriendsLoading(true);
+      const timeoutId = setTimeout(() => {
+        setMovies(undefined);
+        setFriends([]);
+        setMoviesLoading(true);
+        setFriendsLoading(true);
+      }, 0);
       currentUidRef.current = null;
-      return;
+      return () => clearTimeout(timeoutId);
     }
 
     // If it's the same user already listening, do nothing

@@ -25,6 +25,7 @@ import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
 import calendar from "dayjs/plugin/calendar";
 import clsx from "clsx";
+import ComingSoon from "@/components/ComingSoon";
 
 dayjs.extend(relativeTime);
 dayjs.extend(calendar);
@@ -36,7 +37,7 @@ function MovieRecommendCard({ msg, isMine }) {
     <Link
       href={`/movie/${msg.movieId}`}
       className={clsx(
-        "flex gap-3 rounded-2xl overflow-hidden border transition-all max-w-[260px] active:scale-[0.98]",
+        "flex gap-3 rounded-2xl overflow-hidden border transition-all max-w-65 active:scale-[0.98]",
         isMine
           ? "bg-rose-950/40 border-rose-500/20 hover:border-rose-500/40"
           : "bg-zinc-800/60 border-zinc-700/50 hover:border-zinc-600"
@@ -44,7 +45,7 @@ function MovieRecommendCard({ msg, isMine }) {
     >
       {/* Poster */}
       {msg.moviePoster && (
-        <div className="w-14 shrink-0 relative aspect-[2/3]">
+        <div className="w-14 shrink-0 relative aspect-2/3">
           <Image
             src={`https://image.tmdb.org/t/p/w92${msg.moviePoster}`}
             alt={msg.movieTitle || "Film"}
@@ -194,6 +195,8 @@ export default function ChatPage({ params }) {
     );
   }
 
+  return <ComingSoon />;
+
   if (!chatData) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-zinc-400 p-4 gap-4">
@@ -317,7 +320,7 @@ export default function ChatPage({ params }) {
       </div>
 
       {/* ── Subtle background pattern ─────────────────────────────────── */}
-      <div className="absolute inset-0 pointer-events-none -z-0">
+      <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-rose-500/3 rounded-full blur-[100px]" />
       </div>
 
@@ -395,15 +398,15 @@ export default function ChatPage({ params }) {
 
                   {/* Movie card */}
                   {item.isMovie ? (
-                    <div className="flex flex-col max-w-[260px]">
+                    <div className="flex flex-col max-w-65">
                       <MovieRecommendCard msg={item} isMine={isMine} />
                       {item.text && (
                         <div
                           className={clsx(
-                            "px-3 py-2 mt-1 text-[13px] text-white leading-relaxed break-words whitespace-pre-wrap",
+                            "px-3 py-2 mt-1 text-[13px] text-white leading-relaxed wrap-break-word whitespace-pre-wrap",
                             isMine
-                              ? "bg-rose-950/60 rounded-[14px] rounded-tr-[4px]"
-                              : "bg-zinc-800/80 rounded-[14px] rounded-tl-[4px]"
+                              ? "bg-rose-950/60 rounded-[14px] rounded-tr-sm"
+                              : "bg-zinc-800/80 rounded-[14px] rounded-tl-sm"
                           )}
                         >
                           {item.text}
@@ -444,7 +447,7 @@ export default function ChatPage({ params }) {
                               )
                         )}
                       >
-                        <p className="text-[13.5px] leading-relaxed break-words whitespace-pre-wrap select-text">
+                        <p className="text-[13.5px] leading-relaxed wrap-break-word whitespace-pre-wrap select-text">
                           {item.text}
                         </p>
                         <div className="flex items-center gap-1 mt-1 select-none justify-end">
@@ -485,7 +488,7 @@ export default function ChatPage({ params }) {
           className="flex items-end gap-2 max-w-3xl mx-auto"
         >
           {/* Text input */}
-          <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center px-4 py-2.5 gap-2 focus-within:border-rose-500/40 focus-within:ring-1 focus-within:ring-rose-500/20 transition-all min-h-[44px]">
+          <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center px-4 py-2.5 gap-2 focus-within:border-rose-500/40 focus-within:ring-1 focus-within:ring-rose-500/20 transition-all min-h-11">
             <input
               ref={inputRef}
               type="text"

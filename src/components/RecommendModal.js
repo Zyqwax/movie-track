@@ -65,7 +65,7 @@ export default function RecommendModal({ friends, movieTitle, onSelect, onClose 
                         : "hover:bg-zinc-800/60"
                     }`}
                   >
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-9 h-9 rounded-full bg-linear-to-br from-rose-500 to-orange-500 flex items-center justify-center shrink-0 overflow-hidden">
                       {friend.photoURL ? (
                         <Image
                           src={friend.photoURL}

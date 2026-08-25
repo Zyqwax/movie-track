@@ -35,7 +35,7 @@ export default function LoginPage() {
       
       <button
         onClick={loginWithGoogle}
-        className="flex items-center gap-3 bg-white text-zinc-900 px-7 py-3.5 rounded-full font-semibold text-sm hover:bg-zinc-100 transition-all active:scale-95 shadow-lg shadow-white/10"
+        className="btn btn-gold"
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
           <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36 16.6053 6.549L20.0303 3.125C17.9503 1.19 15.2353 0 12.0003 0C7.31028 0 3.25528 2.69 1.28027 6.609L5.27027 9.704C6.21527 6.86 8.87028 4.75 12.0003 4.75Z" fill="#EA4335" />

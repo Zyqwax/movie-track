@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { SearchIcon, Image as ImageIcon, TrendingUp, X, Flame } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { MovieCard } from "@/components/ArchiveUI";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
@@ -49,16 +50,6 @@ export default function SearchPage() {
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
 
-  useEffect(() => {
-    if (!authLoading && user === null) {
-      router.push("/login");
-      return;
-    }
-    if (user) {
-      fetchTrending();
-    }
-  }, [user, authLoading, router]);
-
   // Close suggestions on outside click
   useEffect(() => {
     const handler = (e) => {
@@ -73,7 +64,7 @@ export default function SearchPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const fetchTrending = async () => {
+  async function fetchTrending() {
     try {
       const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY || "demo_key";
       const res = await fetch(`https://api.themoviedb.org/3/trending/movie/day?api_key=${apiKey}&language=tr-TR`);
@@ -88,7 +79,18 @@ export default function SearchPage() {
     } catch (error) {
       console.error("Trending error:", error);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!authLoading && user === null) {
+      router.push("/login");
+      return;
+    }
+    if (user) {
+      const timeoutId = setTimeout(() => fetchTrending(), 0);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, authLoading, router]);
 
   const fetchSuggestions = useCallback(async (q) => {
     if (!q.trim() || q.trim().length < 2) {
@@ -193,14 +195,14 @@ export default function SearchPage() {
     <div className="min-h-full bg-zinc-950 flex flex-col">
 
       {/* ── Sticky Search Header ──────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-900/60 px-4 pt-5 pb-3">
+      <div className="sticky top-0 z-30 backdrop-blur-md border-b border-zinc-900/60 px-4 pt-5 pb-3">
         <h1 className="text-xl font-bold text-white tracking-tight mb-3">
           Film Keşfet
         </h1>
 
         {/* Search form with suggestion dropdown */}
         <div className="relative">
-          <form onSubmit={handleSearch} className="relative group">
+          <form onSubmit={handleSearch} className="search-field relative group">
             <input
               ref={inputRef}
               type="text"
@@ -211,7 +213,7 @@ export default function SearchPage() {
               }}
               placeholder="Film ara..."
               autoComplete="off"
-              className="w-full bg-zinc-900/80 border border-zinc-800/80 rounded-2xl py-3.5 pl-11 pr-11 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-zinc-700 transition-all duration-200"
+              className="search-input"
             />
             {/* Search icon / loading spinner */}
             {suggestionsLoading ? (
@@ -260,7 +262,7 @@ export default function SearchPage() {
                           className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-800/70 active:bg-zinc-800 transition-colors text-left group/item"
                         >
                           {/* Mini poster */}
-                          <div className="w-9 h-[52px] rounded-lg bg-zinc-800 overflow-hidden shrink-0 relative border border-zinc-700/40">
+                          <div className="w-9 h-13 rounded-lg bg-zinc-800 overflow-hidden shrink-0 relative border border-zinc-700/40">
                             {movie.poster_path ? (
                               <Image
                                 src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
@@ -351,46 +353,12 @@ export default function SearchPage() {
             <p className="text-xs text-zinc-600 mt-1">Farklı bir arama deneyin</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3">
             {displayMovies.map((movie, index) => {
               const localData = localMovies?.find((m) => m.id === String(movie.id));
-              return (
-                <div
-                  key={movie.id}
-                  className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-zinc-800 animate-fade-in shadow-sm"
-                  style={{ animationDelay: `${index * 25}ms` }}
-                >
-                  <Link href={`/movie/${movie.id}`} className="block w-full h-full">
-                    {movie.poster_path ? (
-                      <Image
-                        src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
-                        alt={movie.title}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center bg-zinc-900">
-                        <ImageIcon className="text-zinc-600 mb-2" size={18} />
-                        <span className="text-[10px] text-zinc-400 leading-tight">{movie.title}</span>
-                      </div>
-                    )}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
-
-                    <div className="absolute bottom-0 left-0 right-0 p-2">
-                      <p className="text-[9px] sm:text-[10px] font-semibold text-white leading-tight line-clamp-2 mb-1">
-                        {movie.title}
-                      </p>
-                      {localData && (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-bold bg-zinc-800/80 border border-zinc-700/60">
-                          {localData.status === "watched" ? "👀" : "📌"}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                </div>
-              );
+              return <div key={movie.id} className="animate-fade-in" style={{ animationDelay: `${index * 25}ms` }}>
+                <MovieCard movie={movie} rating={movie.vote_average} status={localData ? (localData.status === "watched" ? "İzlendi" : "Listende") : undefined} />
+              </div>;
             })}
           </div>
         )}

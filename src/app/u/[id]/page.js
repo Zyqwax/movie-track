@@ -13,6 +13,8 @@ import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
 import clsx from "clsx";
+import { UserAvatar } from "@/components/BottomNav";
+import { MovieCard as ArchiveMovieCard } from "@/components/ArchiveUI";
 
 dayjs.extend(relativeTime);
 dayjs.locale("tr");
@@ -107,7 +109,7 @@ export default function PublicProfilePage(props) {
           href="/search" 
           className="mt-6 px-6 py-2.5 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-300 font-semibold text-xs hover:text-white transition"
         >
-          Keşfet'e Dön
+          Keşfet&apos;e Dön
         </Link>
       </div>
     );
@@ -210,25 +212,8 @@ export default function PublicProfilePage(props) {
 
       {/* Header Info */}
       <div className="px-5 -mt-12 relative flex flex-col items-center gap-3">
-        {/* Avatar with glowing ring border */}
-        <div className="relative group shrink-0 select-none">
-          <div className="absolute -inset-0.5 bg-gradient-to-br from-rose-500 to-indigo-600 rounded-full blur opacity-45 transition duration-300" />
-          <div className="relative w-24 h-24 rounded-full bg-zinc-900 flex items-center justify-center overflow-hidden ring-4 ring-zinc-950 shadow-2xl">
-            {targetUser.photoURL ? (
-              <Image 
-                src={targetUser.photoURL} 
-                alt={targetUser.displayName || "User"} 
-                width={96} 
-                height={96} 
-                className="rounded-full object-cover" 
-              />
-            ) : (
-              <span className="text-4xl font-extrabold text-white bg-gradient-to-br from-[#5865f2] to-indigo-600 w-full h-full flex items-center justify-center">
-                {targetUser.displayName?.[0]?.toUpperCase() || targetUser.email?.[0]?.toUpperCase() || "?"}
-              </span>
-            )}
-          </div>
-        </div>
+        {/* Initials badge for a consistent archive identity */}
+        <div className="profile-avatar-large"><UserAvatar user={targetUser} /></div>
 
         {/* User name & Active Badge */}
         <div className="text-center">
@@ -267,38 +252,12 @@ export default function PublicProfilePage(props) {
         </div>
       </div>
 
-      {/* Stats Cards Section */}
-      <div className="grid grid-cols-3 gap-3 px-5 py-6 select-none mt-2">
-        <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-900 rounded-2xl p-3.5 flex flex-col items-center gap-1 shadow-sm group">
-          <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center mb-1">
-            <Eye size={14} className="text-emerald-400" />
-          </div>
-          <span className="text-2xl font-black text-white tracking-tight">
-            {movies === undefined ? "—" : watched.length}
-          </span>
-          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">İzlendi</span>
-        </div>
-
-        <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-900 rounded-2xl p-3.5 flex flex-col items-center gap-1 shadow-sm group">
-          <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center mb-1">
-            <Film size={13} className="text-rose-400" />
-          </div>
-          <span className="text-2xl font-black text-white tracking-tight">
-            {movies === undefined ? "—" : wishlist.length}
-          </span>
-          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Listesinde</span>
-        </div>
-
-        <div className="bg-zinc-900/40 backdrop-blur-md border border-zinc-900 rounded-2xl p-3.5 flex flex-col items-center gap-1 shadow-sm group">
-          <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center mb-1">
-            <Star size={13} className="text-amber-400" />
-          </div>
-          <span className="text-2xl font-black text-white tracking-tight">
-            {movies === undefined ? "—" : (avgRating || "—")}
-          </span>
-          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Ort. Puan</span>
-        </div>
-      </div>
+      {/* Ticket stub stats */}
+      <div className="profile-stats"><div className="stub-row">
+        <div className="stub"><span className="n">{movies === undefined ? "—" : watched.length}</span><span className="l">İzlendi</span></div>
+        <div className="stub"><span className="n">{movies === undefined ? "—" : wishlist.length}</span><span className="l">Listesinde</span></div>
+        <div className="stub"><span className="n">{movies === undefined ? "—" : (avgRating || "—")}</span><span className="l">Ort. Puan</span></div>
+      </div></div>
 
       {/* Tabs / Sliding Pill Control */}
       <div className="px-5 select-none">
@@ -337,74 +296,13 @@ export default function PublicProfilePage(props) {
             const undatedMovies = isByDate ? sortedMovies.filter(m => m.watchedAt == null || m.watchedAt === 0) : [];
 
             const MovieCard = ({ movie }) => {
-              const myEntry = myMovies?.find((m) => m.id === movie.id);
-              const myStatus = myEntry?.status;
-
-              return (
-                <Link
-                  key={movie.id}
-                  href={`/movie/${movie.id}`}
-                  className="relative group rounded-xl overflow-hidden aspect-[2/3] bg-zinc-900 block border border-zinc-900/60 shadow-sm hover:shadow-md transition-all duration-300 select-none"
-                >
-                  {movie.posterPath ? (
-                    <Image
-                      src={`https://image.tmdb.org/t/p/w185${movie.posterPath}`}
-                      alt={movie.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition duration-500"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-900 text-zinc-700">
-                      <Film size={14} />
-                    </div>
-                  )}
-                  {/* Subtle dark gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent opacity-95 group-hover:opacity-100 transition-opacity" />
-
-                  {/* High fidelity Status Badge */}
-                  {myStatus === "watched" && (
-                    <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-emerald-500/90 backdrop-blur-sm text-white text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow z-10">
-                      <Check size={7} strokeWidth={4} />
-                      İzledim
-                    </div>
-                  )}
-                  {myStatus === "wishlist" && (
-                    <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-sky-500/90 backdrop-blur-sm text-white text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow z-10">
-                      <Bookmark size={7} strokeWidth={4} />
-                      Listende
-                    </div>
-                  )}
-
-                  {/* Footer details card */}
-                  <div className="absolute bottom-0 left-0 right-0 p-1.5 flex flex-col gap-0.5">
-                    <p className="text-[9px] font-extrabold text-white leading-tight line-clamp-1 group-hover:text-rose-400 transition">
-                      {movie.title}
-                    </p>
-                    
-                    {/* Bottom Details Row */}
-                    <div className="flex items-center justify-between mt-0.5">
-                      {activeTab === "watched" && movie.rating > 0 ? (
-                        <div className="flex items-center gap-0.5 text-amber-400 text-[7.5px] font-black">
-                          <Star size={7} className="fill-amber-400" /> 
-                          <span>{movie.rating}</span>
-                        </div>
-                      ) : <div />}
-
-                      {activeTab === "watched" && movie.watchedAt && (
-                        <span className="text-[7px] font-bold text-zinc-500 truncate select-none">
-                          {dayjs(movie.watchedAt).fromNow()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
+              const myStatus = myMovies?.find((m) => m.id === movie.id)?.status;
+              return <ArchiveMovieCard movie={movie} rating={activeTab === "watched" ? movie.rating : undefined} status={myStatus === "watched" ? "İzlendi" : myStatus === "wishlist" ? "Listende" : undefined} subtitle={activeTab === "watched" && movie.watchedAt ? dayjs(movie.watchedAt).fromNow() : undefined} />;
             };
 
             return (
               <div className="flex flex-col">
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {datedMovies.map((movie) => (
                     <MovieCard key={movie.id} movie={movie} />
                   ))}
@@ -418,7 +316,7 @@ export default function PublicProfilePage(props) {
                       <div className="flex-1 h-px bg-zinc-900" />
                     </div>
                     
-                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                       {undatedMovies.map((movie) => (
                         <MovieCard key={movie.id} movie={movie} />
                       ))}
