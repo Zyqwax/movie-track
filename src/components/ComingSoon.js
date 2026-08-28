@@ -5,15 +5,35 @@ import { Film, ArrowLeft } from "lucide-react";
 
 export default function ComingSoon() {
   return (
-    <section className="coming-soon" aria-labelledby="coming-soon-title">
-      <div className="coming-ticket">
-        <span className="coming-stamp">SOON</span>
-        <Film size={30} aria-hidden="true" />
+    <section
+      className="flex min-h-[calc(100vh-78px)] flex-col items-center justify-center px-7 py-7 text-center text-muted"
+      aria-labelledby="coming-soon-title"
+    >
+      <div className="relative grid h-[72px] w-24 place-items-center rounded-[10px] border border-dashed border-gold-dim bg-surface1 text-gold">
+        <span className="absolute -right-4 -top-3 rotate-8 border border-oxblood-bright px-2 py-1.25 font-mono text-[10px] font-semibold text-oxblood-bright">
+          SOON
+        </span>
+        <Film size={30} />
       </div>
-      <p className="archive-kicker">PERDE ARKASI</p>
-      <h1 id="coming-soon-title">Mesajlar yakında</h1>
-      <p>Mesajlaşma alanını daha iyi bir deneyim için hazırlıyoruz. Çok yakında burada buluşacağız.</p>
-      <Link href="/" className="btn btn-gold"><ArrowLeft size={16} /> Ana sayfaya dön</Link>
+      <p className="mt-3 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-gold">
+        PERDE ARKASI
+      </p>
+      <h1
+        id="coming-soon-title"
+        className="my-3 max-w-[700px] font-display text-[clamp(34px,6vw,60px)] font-black uppercase leading-[0.95] text-ivory"
+      >
+        Mesajlar yakında
+      </h1>
+      <p className="mb-6 max-w-[420px] text-sm leading-[1.7]">
+        Mesajlaşma alanını daha iyi bir deneyim için hazırlıyoruz. Çok yakında
+        burada buluşacağız.
+      </p>
+      <Link
+        href="/"
+        className="flex min-h-11 items-center justify-center gap-2 rounded-[10px] bg-gold px-5.5 py-3 text-sm font-bold text-gold-ink transition hover:-translate-y-px hover:brightness-[1.08]"
+      >
+        <ArrowLeft size={16} /> Ana sayfaya dön
+      </Link>
     </section>
   );
 }

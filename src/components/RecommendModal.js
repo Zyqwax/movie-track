@@ -8,7 +8,12 @@ import { X, Send, Film } from "lucide-react";
  * RecommendModal — Arkadaş seçme modalı
  * Film önerisi göndermek için arkadaş listesinden birini seçer.
  */
-export default function RecommendModal({ friends, movieTitle, onSelect, onClose }) {
+export default function RecommendModal({
+  friends,
+  movieTitle,
+  onSelect,
+  onClose,
+}) {
   const [selectedUid, setSelectedUid] = useState(null);
   const [sending, setSending] = useState(false);
 
@@ -22,7 +27,9 @@ export default function RecommendModal({ friends, movieTitle, onSelect, onClose 
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-t-3xl sm:rounded-3xl shadow-2xl shadow-black/60 overflow-hidden animate-fade-in">
         {/* Header */}
@@ -81,14 +88,26 @@ export default function RecommendModal({ friends, movieTitle, onSelect, onClose 
                       )}
                     </div>
 
-                    <span className={`text-sm truncate flex-1 ${isSelected ? "text-white font-medium" : "text-zinc-300"}`}>
+                    <span
+                      className={`text-sm truncate flex-1 ${isSelected ? "text-white font-medium" : "text-zinc-300"}`}
+                    >
                       {friend.displayName || "Kullanıcı"}
                     </span>
 
                     {isSelected && (
                       <div className="w-4 h-4 bg-rose-500 rounded-full flex items-center justify-center shrink-0">
-                        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-2.5 h-2.5 text-white"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={3}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       </div>
                     )}
