@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { MovieCard } from "@/components/ArchiveUI";
 
 // ── Watched movie grouping ─────────────────────────────────────────────────
-export function groupWatchedMoviesByMonth(movies, dayjsLocale, sortKey) {
+export function groupWatchedMoviesByMonth(movies, dayjsLocale, sortKey, undatedLabel) {
   const groups = new Map();
 
   movies.forEach((movie) => {
@@ -28,13 +28,14 @@ export function groupWatchedMoviesByMonth(movies, dayjsLocale, sortKey) {
       label:
         group.key === "undated"
           ? dayjsLocale === "tr"
-            ? "Tarih Belirtilmemiş"
-            : "Date Not Available"
+            ? undatedLabel
+            : undatedLabel
           : dayjs(`${group.key}-01`).locale(dayjsLocale).format("MMMM YYYY"),
     }));
 }
 
 export default function HomeLibrarySection({
+  t,
   activeTab,
   wishlist,
   watched,
@@ -53,8 +54,8 @@ export default function HomeLibrarySection({
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3.5">
         <div className="flex gap-6">
           {[
-            ["wishlist", "İzleme Listem", wishlist.length],
-            ["watched", "İzlediklerim", watched.length],
+            ["wishlist", t("home.wishlist"), wishlist.length],
+            ["watched", t("home.watched"), watched.length],
           ].map(([id, label, count]) => (
             <button
               key={id}
@@ -104,7 +105,7 @@ export default function HomeLibrarySection({
       {listed.length ? (
         sortKey.startsWith("watchedAt_") && activeTab === "watched" ? (
           <div className="space-y-7">
-            {groupWatchedMoviesByMonth(listed, dayjsLocale, sortKey).map((group) => (
+            {groupWatchedMoviesByMonth(listed, dayjsLocale, sortKey, t("home.undated")).map((group) => (
               <section key={group.key} aria-labelledby={`watched-${group.key}`}>
                 <h3
                   id={`watched-${group.key}`}
@@ -144,10 +145,10 @@ export default function HomeLibrarySection({
         <div className="flex flex-col items-center gap-2.25 px-5 py-15 text-center text-muted">
           <ImageIcon size={28} />
           <strong className="font-display text-xl uppercase text-ivory">
-            Bu liste boş
+            {t("home.emptyTitle")}
           </strong>
           <span className="text-[13px]">
-            Keşfet bölümünden ilk filmi ekleyebilirsin.
+            {t("home.emptyText")}
           </span>
         </div>
       )}

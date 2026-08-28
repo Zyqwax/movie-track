@@ -13,6 +13,8 @@ const SEARCH_DEBOUNCE_MS = 800;
 export default function SearchPage() {
   const { user, loading: authLoading, language, region } = useAuth();
   const t = (key, values) => translate(language, key, values);
+  const searchCacheKey = `movieTracker_searchResults_${language}_${region}`;
+  const trendingCacheKey = `movieTracker_trendingCache_${language}_${region}`;
   const { movies: localMovies } = useAppData();
   const router = useRouter();
 
@@ -23,7 +25,7 @@ export default function SearchPage() {
   });
   const [results, setResults] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("movieTracker_searchResults");
+      const saved = sessionStorage.getItem(searchCacheKey);
       if (saved) {
         try {
           return JSON.parse(saved);
@@ -34,7 +36,7 @@ export default function SearchPage() {
   });
   const [trending, setTrending] = useState(() => {
     if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem("movieTracker_trendingCache");
+      const saved = sessionStorage.getItem(trendingCacheKey);
       if (saved) {
         try {
           return JSON.parse(saved);
@@ -61,12 +63,12 @@ export default function SearchPage() {
         const trendingData = data.results.slice(0, 12);
         setTrending(trendingData);
         if (typeof window !== "undefined")
-          sessionStorage.setItem("movieTracker_trendingCache", JSON.stringify(trendingData));
+          sessionStorage.setItem(trendingCacheKey, JSON.stringify(trendingData));
       }
     } catch (error) {
       console.error("Trending error:", error);
     }
-  }, [language, region]);
+  }, [language, region, trendingCacheKey]);
 
   useEffect(() => {
     if (!authLoading && user === null) {
@@ -98,7 +100,7 @@ export default function SearchPage() {
           const data = await res.json();
           const newResults = data.results || [];
           setResults(newResults);
-          sessionStorage.setItem("movieTracker_searchResults", JSON.stringify(newResults));
+          sessionStorage.setItem(searchCacheKey, JSON.stringify(newResults));
         }
       } catch (error) {
         console.error("Search error:", error);
@@ -106,7 +108,7 @@ export default function SearchPage() {
         setLoading(false);
       }
     },
-    [language, region],
+    [language, region, searchCacheKey],
   );
 
   // ── Interaction handlers ─────────────────────────────────────────────────
@@ -117,7 +119,7 @@ export default function SearchPage() {
     if (!val.trim()) {
       setIsDebouncing(false);
       setResults([]);
-      sessionStorage.setItem("movieTracker_searchResults", JSON.stringify([]));
+      sessionStorage.setItem(searchCacheKey, JSON.stringify([]));
       return;
     }
     setIsDebouncing(true);
@@ -128,7 +130,7 @@ export default function SearchPage() {
     setIsDebouncing(false);
     setResults([]);
     sessionStorage.setItem("movieTracker_searchQuery", "");
-    sessionStorage.setItem("movieTracker_searchResults", JSON.stringify([]));
+    sessionStorage.setItem(searchCacheKey, JSON.stringify([]));
     clearTimeout(debounceRef.current);
     inputRef.current?.focus();
   };
@@ -157,6 +159,8 @@ export default function SearchPage() {
     results: t("search.results"),
     noResults: t("search.noResults"),
     tryDifferent: t("search.tryDifferent"),
+    watched: t("search.watched"),
+    wishlist: t("search.wishlist"),
   };
   return (
     <SearchView

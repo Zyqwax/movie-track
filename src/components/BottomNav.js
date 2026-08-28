@@ -5,15 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { translate } from "@/lib/i18n";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
 
 const navItems = [
-  { name: "Ana Sayfa", href: "/", icon: Home },
-  { name: "Keşfet", href: "/search", icon: Search },
-  { name: "Mesajlar", href: "/messages", icon: MessageCircle },
+  { key: "home", href: "/", icon: Home },
+  { key: "discover", href: "/search", icon: Search },
+  { key: "messages", href: "/messages", icon: MessageCircle },
 ];
 
 function getInitials(user) {
@@ -38,7 +39,7 @@ function UserAvatar({ user, size = "default", className = "" }) {
           className,
         ),
       )}
-      aria-label={user?.displayName || "Kullanıcı"}
+      aria-label={user?.displayName || t("nav.user")}
     >
       {user?.photoURL ? (
         <img
@@ -64,7 +65,8 @@ const unreadClass =
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, language } = useAuth();
+  const t = (key, values) => translate(language, key, values);
   const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(() => {
@@ -100,9 +102,9 @@ export default function BottomNav() {
         </Link>
         <nav
           className="flex flex-1 items-center gap-1 max-md:hidden"
-          aria-label="Ana navigasyon"
+          aria-label={t("nav.main")}
         >
-          {navItems.map(({ name, href, icon: Icon }) => (
+          {navItems.map(({ key, href, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -114,9 +116,9 @@ export default function BottomNav() {
               )}
             >
               <Icon aria-hidden="true" />
-              {name}
+              {t(`nav.${key}`)}
               {href === "/messages" && hasUnread && (
-                <i className={unreadClass} aria-label="Okunmamış mesaj" />
+                <i className={unreadClass} aria-label={t("nav.unread")} />
               )}
             </Link>
           ))}
@@ -127,9 +129,9 @@ export default function BottomNav() {
             href="/search"
           >
             <Search aria-hidden="true" size={16} />
-            <span>Film ara...</span>
+            <span>{t("nav.search")}</span>
           </Link>
-          <Link href="/profile" aria-label="Profil">
+          <Link href="/profile" aria-label={t("nav.profileLabel")}>
             <UserAvatar user={user} />
           </Link>
         </div>
@@ -138,8 +140,8 @@ export default function BottomNav() {
         className="fixed inset-x-0 bottom-0 z-50 hidden border-t border-white/16 bg-surface1/97 px-2 py-2 backdrop-blur-[10px] max-md:flex max-md:pb-[calc(8px+env(safe-area-inset-bottom))]"
         aria-label="Mobil navigasyon"
       >
-        {[...navItems, { name: "Profil", href: "/profile", icon: User }].map(
-          ({ name, href, icon: Icon }) => (
+        {[...navItems, { key: "profile", href: "/profile", icon: User }].map(
+          ({ key, href, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -154,7 +156,7 @@ export default function BottomNav() {
                   <i className="absolute -right-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-oxblood-bright shadow-[0_0_0_2px_var(--color-surface1)]" />
                 )}
               </span>
-              <span>{name}</span>
+              <span>{t(`nav.${key}`)}</span>
             </Link>
           ),
         )}

@@ -1,7 +1,7 @@
 import { Film } from "lucide-react";
 
 // ── Login presentation ─────────────────────────────────────────────────────
-export default function LoginView({ onLogin }) {
+export default function LoginView({ onLogin, t }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-zinc-950">
       {/* Subtle gradient glow behind logo */}
@@ -14,7 +14,7 @@ export default function LoginView({ onLogin }) {
 
       <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Movie Tracker</h1>
       <p className="text-zinc-500 mb-12 text-center max-w-[260px] text-sm leading-relaxed">
-        İzlediğin ve izleyeceğin filmleri keşfet, takip et, arkadaşlarınla paylaş.
+        {t("auth.description")}
       </p>
 
       <button
@@ -27,11 +27,11 @@ export default function LoginView({ onLogin }) {
           <path d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.60986C0.46 8.22986 0 10.0599 0 11.9999C0 13.9399 0.46 15.7699 1.28 17.3899L5.26498 14.2949Z" fill="#FBBC05" />
           <path d="M12.0004 24.0001C15.2404 24.0001 17.9654 22.935 19.9454 21.095L16.0804 18.095C15.0054 18.82 13.6204 19.245 12.0004 19.245C8.87037 19.245 6.21537 17.135 5.26538 14.29L1.27539 17.385C3.25539 21.31 7.31037 24.0001 12.0004 24.0001Z" fill="#34A853" />
         </svg>
-        Google ile Giriş Yap
+        {t("auth.google")}
       </button>
 
       <p className="text-[10px] text-zinc-700 mt-8 text-center max-w-[200px]">
-        Giriş yaparak film verileriniz güvenli bir şekilde bulutta saklanır.
+        {t("auth.privacy")}
       </p>
     </div>
   );

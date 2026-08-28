@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, setDoc } from "firebase/firestore";
+import { DEFAULT_LANGUAGE, translate } from "@/lib/i18n";
 import RefreshCacheView from "@/components/pages/refresh-cache/RefreshCacheView";
 
 // ── Controller ──────────────────────────────────────────────────────────────
@@ -10,12 +11,13 @@ export default function RefreshCachePage() {
   const [status, setStatus] = useState("Bekliyor...");
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const t = (key, values) => translate(DEFAULT_LANGUAGE, key, values);
 
   const addLog = (msg) => setLogs((prev) => [...prev, msg]);
 
   const handleRefresh = async () => {
     setLoading(true);
-    setStatus("Başlıyor...");
+    setStatus(t("refreshCache.starting"));
     try {
       const moviesRef = collection(db, "movies");
       const snap = await getDocs(moviesRef);
@@ -25,13 +27,13 @@ export default function RefreshCachePage() {
 
       for (const movieDoc of snap.docs) {
         const id = movieDoc.id;
-        addLog(`ID ${id} için TMDB'den veri çekiliyor...`);
+        addLog(t("refreshCache.fetching", { id }));
 
         const res = await fetch(
           `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}&language=tr-TR&append_to_response=videos,credits`,
         );
         if (!res.ok) {
-          addLog(`HATA: ${id} için TMDB isteği başarısız.`);
+          addLog(t("refreshCache.failed", { id }));
           continue;
         }
         const data = await res.json();
@@ -57,10 +59,10 @@ export default function RefreshCachePage() {
         };
 
         await setDoc(doc(db, "movies", id), movieData, { merge: true });
-        addLog(`BAŞARILI: ${movieData.title} güncellendi.`);
+        addLog(t("refreshCache.success", { title: movieData.title }));
       }
 
-      setStatus("Tamamlandı!");
+      setStatus(t("refreshCache.completed"));
     } catch (err) {
       console.error(err);
       setStatus(`Hata: ${err.message}`);
@@ -69,5 +71,5 @@ export default function RefreshCachePage() {
     }
   };
 
-  return <RefreshCacheView status={status} logs={logs} loading={loading} onRefresh={handleRefresh} />;
+  return <RefreshCacheView status={status} logs={logs} loading={loading} onRefresh={handleRefresh} t={t} />;
 }

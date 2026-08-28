@@ -22,6 +22,7 @@ import {
 import { Calendar, Clock, TrendingUp } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
+import "dayjs/locale/en";
 import relativeTime from "dayjs/plugin/relativeTime";
 import PastDateModal from "@/components/pages/movie-detail/PastDateModal";
 import MovieBackdropHeader from "@/components/pages/movie-detail/MovieBackdropHeader";
@@ -33,7 +34,6 @@ import MovieRecommendation from "@/components/pages/movie-detail/MovieRecommenda
 import { MovieOverview, MovieCast, MovieTrailer } from "@/components/pages/movie-detail/MovieSections";
 
 dayjs.extend(relativeTime);
-dayjs.locale("tr");
 
 export default function MovieDetailPage({ params }) {
   const unwrappedParams = use(params);
@@ -226,19 +226,20 @@ export default function MovieDetailPage({ params }) {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" />
       </div>
     );
-  if (!movie) return <div className="p-4 text-center text-white mt-10">Film bulunamadı.</div>;
+  if (!movie) return <div className="p-4 text-center text-white mt-10">{t("movie.notFound")}</div>;
   const watchHistory = userData?.watchHistory || [];
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
       {/* ─── Overlays ─── */}
-      {showPastModal && <PastDateModal onConfirm={handlePastDate} onClose={() => setShowPastModal(false)} />}
+      {showPastModal && <PastDateModal onConfirm={handlePastDate} onClose={() => setShowPastModal(false)} t={t} />}
       <MovieRecommendation
         open={showRecommendModal}
         friends={friends}
         movieTitle={movie.title}
         onClose={() => setShowRecommendModal(false)}
         onSelect={recommendMovie}
+        t={t}
       />
 
       {/* ─── Backdrop and mobile header ─── */}
@@ -301,6 +302,7 @@ export default function MovieDetailPage({ params }) {
               onUpdateStatus={updateStatus}
               onRemove={removeMovie}
               onRecommend={() => setShowRecommendModal(true)}
+              t={t}
             />
             <MovieRatingReview
               userData={userData}
@@ -309,8 +311,9 @@ export default function MovieDetailPage({ params }) {
               onRating={updateRating}
               onReviewChange={setReview}
               onSaveReview={saveReview}
+              t={t}
             />
-            <WatchHistory history={watchHistory} language={language} onRemove={removeWatchEntry} />
+            <WatchHistory history={watchHistory} language={language} onRemove={removeWatchEntry} t={t} />
           </div>
 
           {/* ─── Content: providers and movie details ─── */}
@@ -322,9 +325,9 @@ export default function MovieDetailPage({ params }) {
               regionLabel={getRegionLabel(region, language)}
               t={t}
             />
-            <MovieOverview overview={movie.overview} />
-            <MovieCast cast={movie.cast} />
-            <MovieTrailer trailer={movie.trailer} />
+            <MovieOverview overview={movie.overview} t={t} />
+            <MovieCast cast={movie.cast} t={t} />
+            <MovieTrailer trailer={movie.trailer} t={t} />
           </div>
         </div>
       </div>

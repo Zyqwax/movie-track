@@ -36,15 +36,16 @@ export function PerfStrip({ className = "" }) {
   );
 }
 
-export function TicketStub({ wishlist = 0, watched = 0 }) {
+export function TicketStub({ wishlist = 0, watched = 0, t }) {
+  const label = (key, fallback) => (t ? t(key) : fallback);
   return (
     <div
       className="flex justify-center"
-      aria-label={`${wishlist} listede, ${watched} izlendi`}
+      aria-label={`${wishlist} ${label("profile.wishlist", "listede")}, ${watched} ${label("profile.watched", "izlendi")}`}
     >
       {[
-        [wishlist, "Listede"],
-        [watched, "İzlendi"],
+        [wishlist, label("profile.wishlist", "Listede")],
+        [watched, label("profile.watched", "İzlendi")],
       ].map(([value, label], index) => (
         <div
           key={label}

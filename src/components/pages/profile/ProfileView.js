@@ -30,13 +30,10 @@ export function ProfileLoading() {
 }
 
 // ── Profile header ───────────────────────────────────────────────────────
-function ProfileHeader({ user, onShare, onLogout }) {
+function ProfileHeader({ user, onShare, onLogout, t }) {
   return (
-    <div className="relative overflow-hidden">
-      <div className="relative h-39 overflow-hidden profile-header-background after:absolute after:inset-x-4 after:bottom-3 after:h-px after:bg-white/16">
-        <div className="absolute inset-0 profile-header-glow from-rose-500/20 via-transparent to-transparent"></div>
-      </div>
-      <div className="px-4 pb-4 pt-12 border-b border-zinc-900/60">
+    <div className="relative overflow-hidden profile-header-background rounded-xl">
+      <div className="relative border-b border-zinc-900/60 px-4 pb-4 pt-12">
         <div className="flex items-end gap-4 -mt-8 mb-4">
           <div className="h-20.5 w-20.5 rounded-full bg-surface1 p-0.75 shadow-[0_0_0_1px_var(--color-gold-dim)]">
             <UserAvatar user={user} className="h-full w-full text-3xl" />
@@ -45,18 +42,18 @@ function ProfileHeader({ user, onShare, onLogout }) {
             <button
               onClick={onShare}
               className="flex min-h-11 items-center justify-center gap-2.25 rounded-[10px] border border-white/16 bg-transparent px-4 py-3 font-body text-sm font-bold text-ivory transition hover:-translate-y-px hover:bg-ivory/4"
-              title="Profili Paylaş"
+              title={t("profile.share")}
             >
               <Share2 size={13} strokeWidth={2.5} />
-              <span>Paylaş</span>
+              <span>{t("profile.share")}</span>
             </button>
             <button
               onClick={onLogout}
               className="flex min-h-11 items-center justify-center gap-2.25 rounded-[10px] border border-white/16 bg-transparent px-4 py-3 font-body text-sm font-bold text-ivory transition hover:-translate-y-px hover:bg-ivory/4"
-              title="Çıkış Yap"
+              title={t("profile.logout")}
             >
               <LogOut size={13} strokeWidth={2.5} />
-              <span>Çıkış</span>
+              <span>{t("profile.logout")}</span>
             </button>
           </div>
         </div>
@@ -167,13 +164,13 @@ function ProfileStats({ movies, watchedCount, wishlistCount, average, t }) {
   );
 }
 
-function FriendsSection({ friends, onShare }) {
+function FriendsSection({ friends, onShare, t }) {
   return (
     <div className="px-4 py-5 border-b border-zinc-900/40">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Users size={14} className="text-[#5865f2]" />
-          <h2 className="text-sm font-bold text-white">Arkadaşlarım</h2>
+          <h2 className="text-sm font-bold text-white">{t("profile.friends")}</h2>
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
             {friends.length}
           </span>
@@ -182,12 +179,12 @@ function FriendsSection({ friends, onShare }) {
           onClick={onShare}
           className="text-[11px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-0.5 transition-colors"
         >
-          + Arkadaş Ekle
+          {t("profile.addFriend")}
         </button>
       </div>
       {friends.length > 0 ? (
         <div
-          className="flex gap-4 overflow-x-auto pb-1 -mx-1 px-1"
+          className="flex gap-4 overflow-x-auto pb-1 -mx-1 px-1 pt-1"
           style={{ scrollbarWidth: "none" }}
         >
           {friends.map((friend) => (
@@ -197,13 +194,13 @@ function FriendsSection({ friends, onShare }) {
               className="flex flex-col items-center gap-2 shrink-0 w-16 group"
             >
               <div className="relative">
-                <div className="w-14 h-14 rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center border-2 border-zinc-800 group-hover:border-[#5865f2] group-hover:scale-105 transition-all duration-200 shadow-md">
+                <div className="w-16 h-16 rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center border-2 border-zinc-800 group-hover:border-[#5865f2] group-hover:scale-105 transition-all duration-200 shadow-md">
                   {friend.photoURL ? (
                     <Image
                       src={friend.photoURL}
                       alt={friend.displayName || ""}
-                      width={56}
-                      height={56}
+                      width={64}
+                      height={64}
                       className="object-cover h-full w-full"
                     />
                   ) : (
@@ -212,7 +209,6 @@ function FriendsSection({ friends, onShare }) {
                     </span>
                   )}
                 </div>
-                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-[#23a55a] border-2 border-zinc-950" />
               </div>
               <span className="text-[10px] font-semibold text-zinc-400 group-hover:text-white truncate w-full text-center transition-colors">
                 {friend.displayName?.split(" ")[0]}
@@ -239,20 +235,20 @@ function FriendsSection({ friends, onShare }) {
   );
 }
 
-function RecentlyWatched({ movies, language }) {
+function RecentlyWatched({ movies, language, t }) {
   if (!movies.length) return null;
   return (
     <div className="px-4 py-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Clock size={14} className="text-rose-400" />
-          <h2 className="text-sm font-bold text-white">Son İzlenenler</h2>
+          <h2 className="text-sm font-bold text-white">{t("profile.recentlyWatched")}</h2>
         </div>
         <Link
           href="/?tab=watched"
           className="text-[11px] text-zinc-500 hover:text-zinc-300 font-semibold flex items-center gap-0.5 transition-colors"
         >
-          Tümü <ChevronRight size={12} />
+          {t("profile.all")} <ChevronRight size={12} />
         </Link>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -317,8 +313,8 @@ export default function ProfileView({
   t,
 }) {
   return (
-    <div className="min-h-full bg-zinc-950 text-zinc-100 overflow-hidden">
-      <ProfileHeader user={user} onShare={onShare} onLogout={onLogout} />
+    <div className="min-h-full bg-zinc-950 text-zinc-100 overflow-hidden p-4">
+      <ProfileHeader user={user} onShare={onShare} onLogout={onLogout} t={t} />
       <PreferencesSection
         language={language}
         region={region}
@@ -333,8 +329,8 @@ export default function ProfileView({
         average={avgRating}
         t={t}
       />
-      <FriendsSection friends={friends} onShare={onShare} />
-      <RecentlyWatched movies={recentlyWatched} language={language} />
+      <FriendsSection friends={friends} onShare={onShare} t={t} />
+      <RecentlyWatched movies={recentlyWatched} language={language} t={t} />
       <Attribution />
     </div>
   );

@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
+import { fetchAndCacheMovie } from "@/lib/tmdb";
+import { getLanguageConfig } from "@/lib/i18n";
 
 const AppDataContext = createContext({
   movies: undefined,
@@ -15,7 +17,7 @@ const AppDataContext = createContext({
 export const useAppData = () => useContext(AppDataContext);
 
 export const AppDataProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, language, region } = useAuth();
   const [movies, setMovies] = useState(undefined);
   const [friends, setFriends] = useState([]);
   const [moviesLoading, setMoviesLoading] = useState(true);
@@ -24,7 +26,7 @@ export const AppDataProvider = ({ children }) => {
   // Keep refs to unsubscribe functions so we don't re-create listeners unnecessarily
   const unsubMoviesRef = useRef(null);
   const unsubFriendsRef = useRef(null);
-  const currentUidRef = useRef(null);
+  const currentSubscriptionRef = useRef(null);
 
   useEffect(() => {
     // If no user (logged out), clear everything and unsubscribe
@@ -43,13 +45,14 @@ export const AppDataProvider = ({ children }) => {
         setMoviesLoading(true);
         setFriendsLoading(true);
       }, 0);
-      currentUidRef.current = null;
+      currentSubscriptionRef.current = null;
       return () => clearTimeout(timeoutId);
     }
 
-    // If it's the same user already listening, do nothing
-    if (user.uid === currentUidRef.current) return;
-    currentUidRef.current = user.uid;
+    // Re-subscribe when the locale changes so cached movie metadata is localized.
+    const subscriptionKey = `${user.uid}:${language}:${region}`;
+    if (subscriptionKey === currentSubscriptionRef.current) return;
+    currentSubscriptionRef.current = subscriptionKey;
 
     // Clean up any previous listeners (e.g. after account switch)
     if (unsubMoviesRef.current) unsubMoviesRef.current();
@@ -57,13 +60,22 @@ export const AppDataProvider = ({ children }) => {
 
     // Start listening to movies
     const moviesQ = query(collection(db, "users", user.uid, "movies"));
-    unsubMoviesRef.current = onSnapshot(moviesQ, (snapshot) => {
-      const data = [];
-      snapshot.forEach((doc) => data.push({ id: doc.id, ...doc.data() }));
-      setMovies(data);
+    let active = true;
+    const { tmdb } = getLanguageConfig(language);
+    unsubMoviesRef.current = onSnapshot(moviesQ, async (snapshot) => {
+      const savedMovies = [];
+      snapshot.forEach((movieDoc) => savedMovies.push({ id: movieDoc.id, ...movieDoc.data() }));
+      const localizedMovies = await Promise.all(
+        savedMovies.map(async (savedMovie) => {
+          const localizedMovie = await fetchAndCacheMovie(savedMovie.id, tmdb, region);
+          return localizedMovie ? { ...savedMovie, ...localizedMovie } : savedMovie;
+        }),
+      );
+      if (!active) return;
+      setMovies(localizedMovies);
       setMoviesLoading(false);
     }, () => {
-      setMoviesLoading(false);
+      if (active) setMoviesLoading(false);
     });
 
     // Start listening to friends
@@ -78,10 +90,10 @@ export const AppDataProvider = ({ children }) => {
     });
 
     return () => {
-      // Don't unsubscribe on every render — only on unmount (provider tear-down)
-      // The ref-based guard above prevents duplicate listeners
+      active = false;
+      // The next subscription or provider teardown closes the listeners.
     };
-  }, [user]);
+  }, [user, language, region]);
 
   return (
     <AppDataContext.Provider value={{ movies, friends, moviesLoading, friendsLoading }}>

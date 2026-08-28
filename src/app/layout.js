@@ -32,6 +32,7 @@ import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { AuthProvider } from "@/context/AuthContext";
 import { AppDataProvider } from "@/context/AppDataContext";
 import MainContentWrapper from "@/components/MainContentWrapper";
+import LanguageSync from "@/components/LanguageSync";
 
 export default function RootLayout({ children }) {
   return (
@@ -39,6 +40,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen flex flex-col">
         <ServiceWorkerRegister />
         <AuthProvider>
+          <LanguageSync />
           <AppDataProvider>
             <BottomNav />
             <MainContentWrapper>{children}</MainContentWrapper>

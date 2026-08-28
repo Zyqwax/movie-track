@@ -7,35 +7,24 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
-import { getLanguageConfig } from "@/lib/i18n";
+import { getLanguageConfig, translate } from "@/lib/i18n";
 import HomeView from "@/components/pages/home/HomeView";
 
 dayjs.extend(relativeTime);
 
 // ── Sort configuration ──────────────────────────────────────────────────────
-const SORT_OPTIONS = {
-  wishlist: [
-    { label: "En Son Eklenen", value: "addedAt_desc" },
-    { label: "En Eski Eklenen", value: "addedAt_asc" },
-    { label: "İsme Göre (A→Z)", value: "title_asc" },
-    { label: "İsme Göre (Z→A)", value: "title_desc" },
-  ],
-  watched: [
-    { label: "En Son İzlenen", value: "watchedAt_desc" },
-    { label: "En Eski İzlenen", value: "watchedAt_asc" },
-    { label: "En Yüksek Puan", value: "rating_desc" },
-    { label: "En Düşük Puan", value: "rating_asc" },
-    { label: "İsme Göre (A→Z)", value: "title_asc" },
-  ],
+const SORT_VALUES = {
+  wishlist: ["addedAt_desc", "addedAt_asc", "title_asc", "title_desc"],
+  watched: ["watchedAt_desc", "watchedAt_asc", "rating_desc", "rating_asc", "title_asc"],
 };
 
-function sortMovies(movies, sortKey) {
+function sortMovies(movies, sortKey, locale) {
   const [field, dir] = sortKey.split("_");
   return [...movies].sort((a, b) => {
     if (field === "title")
       return dir === "asc"
-        ? (a.title || "").localeCompare(b.title || "", "tr")
-        : (b.title || "").localeCompare(a.title || "", "tr");
+        ? (a.title || "").localeCompare(b.title || "", locale)
+        : (b.title || "").localeCompare(a.title || "", locale);
     const av = a[field] || 0;
     const bv = b[field] || 0;
     return dir === "asc" ? av - bv : bv - av;
@@ -45,6 +34,7 @@ function sortMovies(movies, sortKey) {
 // ── Page controller ─────────────────────────────────────────────────────────
 export default function Home() {
   const { user, loading, language } = useAuth();
+  const t = (key, values) => translate(language, key, values);
   const { movies } = useAppData();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(() =>
@@ -92,8 +82,19 @@ export default function Home() {
   const listed = sortMovies(
     movies?.filter((m) => m.status === activeTab) || [],
     sortKey,
+    language,
   );
-  const options = SORT_OPTIONS[activeTab];
+  const sortLabels = {
+    addedAt_desc: t("home.sortAddedDesc"),
+    addedAt_asc: t("home.sortAddedAsc"),
+    watchedAt_desc: t("home.sortWatchedDesc"),
+    watchedAt_asc: t("home.sortWatchedAsc"),
+    rating_desc: t("home.sortRatingDesc"),
+    rating_asc: t("home.sortRatingAsc"),
+    title_asc: t("home.sortTitleAsc"),
+    title_desc: t("home.sortTitleDesc"),
+  };
+  const options = SORT_VALUES[activeTab].map((value) => ({ value, label: sortLabels[value] }));
   const changeTab = (tab) => {
     const nextSort = tab === "wishlist" ? "addedAt_desc" : "watchedAt_desc";
     setActiveTab(tab);
@@ -114,6 +115,7 @@ export default function Home() {
   return (
     <HomeView
       hero={hero}
+      t={t}
       wishlist={wishlist}
       watched={watched}
       activeTab={activeTab}

@@ -1,15 +1,15 @@
 // ── Refresh cache presentation ──────────────────────────────────────────────
-export default function RefreshCacheView({ status, logs, loading, onRefresh }) {
+export default function RefreshCacheView({ status, logs, loading, onRefresh, t }) {
   return (
     <div className="p-8 bg-zinc-950 min-h-screen text-white font-mono">
-      <h1 className="text-2xl mb-4 text-rose-500 font-bold">TMDB Cache Yenileme Aracı</h1>
+      <h1 className="text-2xl mb-4 text-rose-500 font-bold">{t("refreshCache.title")}</h1>
 
       <button
         onClick={onRefresh}
         disabled={loading}
         className="px-6 py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 disabled:opacity-50 mb-6"
       >
-        {loading ? "İşleniyor..." : "Tüm Cache'i Yenile"}
+        {loading ? t("refreshCache.processing") : t("refreshCache.refresh")}
       </button>
 
       <div className="mb-4">
@@ -21,7 +21,7 @@ export default function RefreshCacheView({ status, logs, loading, onRefresh }) {
         {logs.map((log, index) => (
           <div key={index} className="text-sm text-zinc-300 mb-1 border-b border-zinc-800/50 pb-1">{log}</div>
         ))}
-        {logs.length === 0 && <div className="text-zinc-600">İşlem bekleniyor...</div>}
+        {logs.length === 0 && <div className="text-zinc-600">{t("refreshCache.waiting")}</div>}
       </div>
     </div>
   );

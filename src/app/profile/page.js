@@ -29,9 +29,9 @@ export default function ProfilePage() {
   const handleShareProfile = () => {
     const url = `${window.location.origin}/u/${user.uid}`;
     if (navigator.share) {
-      navigator.share({ title: "Movie Tracker", text: "Beni Movie Tracker'da arkadaş ekle!", url }).catch(() => {});
+      navigator.share({ title: t("profile.shareTitle"), text: t("profile.shareText"), url }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(url).then(() => alert("Profil linkiniz kopyalandı! 🚀"));
+      navigator.clipboard.writeText(url).then(() => alert(t("profile.copied")));
     }
   };
 

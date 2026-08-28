@@ -13,6 +13,7 @@ export default function RecommendModal({
   movieTitle,
   onSelect,
   onClose,
+  t,
 }) {
   const [selectedUid, setSelectedUid] = useState(null);
   const [sending, setSending] = useState(false);
@@ -35,7 +36,7 @@ export default function RecommendModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-2">
           <div className="min-w-0">
-            <h2 className="text-sm font-bold text-white">Arkadaşa Öner</h2>
+            <h2 className="text-sm font-bold text-white">{t("movie.recommend")}</h2>
             <p className="text-[10px] text-zinc-500 mt-0.5 truncate flex items-center gap-1">
               <Film size={9} className="text-rose-400 shrink-0" />
               {movieTitle}
@@ -53,9 +54,9 @@ export default function RecommendModal({
         <div className="px-3 pb-2 max-h-[45vh] overflow-y-auto">
           {friends.length === 0 ? (
             <div className="py-10 text-center text-zinc-500">
-              <p className="text-xs">Henüz arkadaşın yok</p>
+              <p className="text-xs">{t("messages.needFriend")}</p>
               <p className="text-[10px] text-zinc-600 mt-0.5">
-                Profil sayfasından arkadaş ekleyebilirsin
+                {t("profile.addFriend")}
               </p>
             </div>
           ) : (
@@ -91,7 +92,7 @@ export default function RecommendModal({
                     <span
                       className={`text-sm truncate flex-1 ${isSelected ? "text-white font-medium" : "text-zinc-300"}`}
                     >
-                      {friend.displayName || "Kullanıcı"}
+                      {friend.displayName || t("nav.user")}
                     </span>
 
                     {isSelected && (
@@ -127,7 +128,7 @@ export default function RecommendModal({
               className="w-full py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold hover:bg-rose-500 transition disabled:opacity-30 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               <Send size={14} />
-              {sending ? "Gönderiliyor..." : "Öner"}
+              {sending ? t("common.saving") : t("movie.recommend")}
             </button>
           </div>
         )}

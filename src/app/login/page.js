@@ -3,12 +3,14 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { DEFAULT_LANGUAGE, translate } from "@/lib/i18n";
 import LoginView from "@/components/pages/login/LoginView";
 
 // ── Controller ──────────────────────────────────────────────────────────────
 export default function LoginPage() {
   const { user, loading, loginWithGoogle } = useAuth();
   const router = useRouter();
+  const t = (key, values) => translate(DEFAULT_LANGUAGE, key, values);
 
   useEffect(() => {
     if (!loading && user) {
@@ -24,5 +26,5 @@ export default function LoginPage() {
     );
   if (user) return null;
 
-  return <LoginView onLogin={loginWithGoogle} />;
+  return <LoginView onLogin={loginWithGoogle} t={t} />;
 }
