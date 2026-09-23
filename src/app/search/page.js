@@ -112,7 +112,7 @@ export default function SearchPage() {
   );
 
   // ── Interaction handlers ─────────────────────────────────────────────────
-  const handleInputChange = (val) => {
+  const handleInputChange = useCallback((val) => {
     setQueryInput(val);
     sessionStorage.setItem("movieTracker_searchQuery", val);
     clearTimeout(debounceRef.current);
@@ -124,7 +124,7 @@ export default function SearchPage() {
     }
     setIsDebouncing(true);
     debounceRef.current = setTimeout(() => fetchResults(val), SEARCH_DEBOUNCE_MS);
-  };
+  }, [fetchResults, searchCacheKey]);
   const handleClear = () => {
     setQueryInput("");
     setIsDebouncing(false);

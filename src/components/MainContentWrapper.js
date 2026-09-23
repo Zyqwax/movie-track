@@ -2,21 +2,19 @@
 
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { useNavigation } from "@/context/NavigationContext";
 
 export default function MainContentWrapper({ children }) {
   const pathname = usePathname();
   const isFullScreen =
     pathname === "/login" || pathname.startsWith("/messages/");
-  // The shared top navigation consumes no horizontal layout space.
-  const desktopShift = "";
+  const { sidebarOpen } = useNavigation();
 
   return (
     <main
       className={clsx(
-        "flex-1 min-w-0 w-full max-w-7xl mx-auto",
-        desktopShift,
-        // Mobile: reserve space for the fixed bottom tab bar.
-        !isFullScreen && "pb-[calc(90px+env(safe-area-inset-bottom,0px))]",
+        "min-w-0 w-full max-w-7xl flex-1 mx-auto transition-[margin] duration-200",
+        !isFullScreen && sidebarOpen && "md:ml-64 md:max-w-[calc(100%-16rem)]",
         isFullScreen && "h-dvh flex flex-col",
       )}
     >

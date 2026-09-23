@@ -1,19 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import {
-  ChevronRight,
-  Clock,
-  LogOut,
-  Settings,
-  Share2,
-  Users,
-} from "lucide-react";
-import {
-  LANGUAGES,
-  REGIONS,
-  getLanguageConfig,
-  getRegionLabel,
-} from "@/lib/i18n";
+import { ChevronRight, Clock, LogOut, Settings, Share2, Users } from "lucide-react";
+import { LANGUAGES, REGIONS, getLanguageConfig, getRegionLabel } from "@/lib/i18n";
 import { UserAvatar } from "@/components/BottomNav";
 import { MovieCard } from "@/components/ArchiveUI";
 import dayjs from "dayjs";
@@ -58,9 +46,7 @@ function ProfileHeader({ user, onShare, onLogout, t }) {
           </div>
         </div>
         <div>
-          <h1 className="text-lg font-black text-white tracking-tight">
-            {user.displayName || "Kullanıcı"}
-          </h1>
+          <h1 className="text-lg font-black text-white tracking-tight">{user.displayName || "Kullanıcı"}</h1>
           <p className="text-xs text-zinc-500 mt-0.5">{user.email}</p>
         </div>
       </div>
@@ -71,10 +57,7 @@ function ProfileHeader({ user, onShare, onLogout, t }) {
 // ── Preferences ──────────────────────────────────────────────────────────
 function PreferencesSection({ language, region, onChange, status, t }) {
   return (
-    <section
-      className="border-b border-zinc-900/40 px-4 py-5"
-      aria-labelledby="settings-title"
-    >
+    <section className="border-b border-zinc-900/40 px-4 py-5" aria-labelledby="settings-title">
       <div className="mb-4 flex items-center gap-2">
         <Settings size={15} className="text-gold" />
         <h2 id="settings-title" className="text-sm font-bold text-white">
@@ -95,9 +78,7 @@ function PreferencesSection({ language, region, onChange, status, t }) {
               </option>
             ))}
           </select>
-          <span className="font-normal text-[10px] text-zinc-600">
-            {t("settings.languageHelp")}
-          </span>
+          <span className="font-normal text-[10px] text-zinc-600">{t("settings.languageHelp")}</span>
         </label>
         <label className="flex flex-col gap-1.5 text-xs font-semibold text-zinc-400">
           {t("settings.region")}
@@ -112,25 +93,12 @@ function PreferencesSection({ language, region, onChange, status, t }) {
               </option>
             ))}
           </select>
-          <span className="font-normal text-[10px] text-zinc-600">
-            {t("settings.regionHelp")}
-          </span>
+          <span className="font-normal text-[10px] text-zinc-600">{t("settings.regionHelp")}</span>
         </label>
       </div>
       {status !== "idle" && (
-        <p
-          className={
-            status === "error"
-              ? "mt-3 text-xs text-rose-400"
-              : "mt-3 text-xs text-gold"
-          }
-          role="status"
-        >
-          {status === "saving"
-            ? t("common.saving")
-            : status === "saved"
-              ? t("settings.saved")
-              : t("settings.error")}
+        <p className={status === "error" ? "mt-3 text-xs text-rose-400" : "mt-3 text-xs text-gold"} role="status">
+          {status === "saving" ? t("common.saving") : status === "saved" ? t("settings.saved") : t("settings.error")}
         </p>
       )}
     </section>
@@ -154,9 +122,7 @@ function ProfileStats({ movies, watchedCount, wishlistCount, average, t }) {
             <span className="block font-display text-[26px] font-black leading-none text-gold">
               {movies === undefined ? "—" : value}
             </span>
-            <span className="mt-1 block font-mono text-[9.5px] uppercase tracking-[0.12em] text-muted">
-              {t(label)}
-            </span>
+            <span className="mt-1 block font-mono text-[9.5px] uppercase tracking-[0.12em] text-muted">{t(label)}</span>
           </div>
         ))}
       </div>
@@ -183,10 +149,7 @@ function FriendsSection({ friends, onShare, t }) {
         </button>
       </div>
       {friends.length > 0 ? (
-        <div
-          className="flex gap-4 overflow-x-auto pb-1 -mx-1 px-1 pt-1"
-          style={{ scrollbarWidth: "none" }}
-        >
+        <div className="flex gap-4 overflow-x-auto pb-1 -mx-1 px-1 pt-1" style={{ scrollbarWidth: "none" }}>
           {friends.map((friend) => (
             <Link
               key={friend.id}
@@ -221,10 +184,7 @@ function FriendsSection({ friends, onShare, t }) {
           <Users size={24} className="text-zinc-700 mx-auto mb-2" />
           <p className="text-xs text-zinc-500 leading-relaxed">
             Arkadaş listeniz boş.{" "}
-            <button
-              onClick={onShare}
-              className="text-rose-400 hover:text-rose-300 font-bold transition-colors"
-            >
+            <button onClick={onShare} className="text-rose-400 hover:text-rose-300 font-bold transition-colors">
               Profil linkini paylaşarak
             </button>{" "}
             arkadaş ekleyin!
@@ -258,11 +218,7 @@ function RecentlyWatched({ movies, language, t }) {
             movie={movie}
             rating={movie.rating}
             subtitle={
-              movie.watchedAt
-                ? dayjs(movie.watchedAt)
-                    .locale(getLanguageConfig(language).dayjs)
-                    .fromNow()
-                : undefined
+              movie.watchedAt ? dayjs(movie.watchedAt).locale(getLanguageConfig(language).dayjs).fromNow() : undefined
             }
           />
         ))}
@@ -289,8 +245,7 @@ function Attribution() {
         />
       </a>
       <p className="text-[9px] font-medium text-zinc-700 max-w-55 leading-relaxed">
-        Bu uygulama TMDB API&apos;sini kullanmaktadır ancak TMDB tarafından
-        onaylanmamıştır.
+        Bu uygulama TMDB API&apos;sini kullanmaktadır ancak TMDB tarafından onaylanmamıştır.
       </p>
     </div>
   );

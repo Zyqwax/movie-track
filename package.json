@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:firestore:movies": "node scripts/migrate-firestore-movie-cache.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -22,6 +23,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.2.4",
+    "firebase-admin": "^13.10.0",
     "tailwindcss": "^4.3.3"
   }
 }

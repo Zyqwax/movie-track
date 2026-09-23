@@ -33,6 +33,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { AppDataProvider } from "@/context/AppDataContext";
 import MainContentWrapper from "@/components/MainContentWrapper";
 import LanguageSync from "@/components/LanguageSync";
+import { NavigationProvider } from "@/context/NavigationContext";
 
 export default function RootLayout({ children }) {
   return (
@@ -42,8 +43,10 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <LanguageSync />
           <AppDataProvider>
-            <BottomNav />
-            <MainContentWrapper>{children}</MainContentWrapper>
+            <NavigationProvider>
+              <BottomNav />
+              <MainContentWrapper>{children}</MainContentWrapper>
+            </NavigationProvider>
           </AppDataProvider>
         </AuthProvider>
       </body>

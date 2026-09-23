@@ -1,58 +1,96 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-export async function fetchAndCacheMovie(id, language = "tr-TR", region = "TR") {
+function movieRef(id) {
+  return doc(db, "movies", String(id));
+}
+
+function localizationRef(id, language) {
+  return doc(db, "movies", String(id), "localizations", language);
+}
+
+function providerRef(id, region) {
+  return doc(db, "movies", String(id), "providers", region);
+}
+
+function normalizeMovie(data) {
+  return {
+    id: data.id,
+    originalTitle: data.original_title || null,
+    originalLanguage: data.original_language || null,
+    posterPath: data.poster_path || null,
+    backdropPath: data.backdrop_path || null,
+    releaseDate: data.release_date || null,
+    runtime: data.runtime ?? null,
+    voteAverage: data.vote_average ? Math.round(data.vote_average * 10) / 10 : null,
+    voteCount: data.vote_count || 0,
+  };
+}
+
+function normalizeLocalization(data, language) {
+  return {
+    locale: language,
+    title: data.title || data.original_title || "",
+    overview: data.overview || "",
+    tagline: data.tagline || "",
+    genres: data.genres?.map((genre) => genre.name) || [],
+    trailer: data.videos?.results?.find((video) => video.type === "Trailer" && video.site === "YouTube")?.key || null,
+    cast:
+      data.credits?.cast
+        ?.slice(0, 5)
+        .map((castMember) => ({
+          name: castMember.name,
+          character: castMember.character,
+          profilePath: castMember.profile_path,
+        })) || [],
+  };
+}
+
+function legacyMovie(data, language, region) {
+  return data
+    ? { ...data, contentLanguage: data.contentLanguage || language, contentRegion: data.contentRegion || region }
+    : null;
+}
+
+export async function fetchAndCacheMovie(id, language = "tr-TR", region = "TR", options = {}) {
+  const idString = String(id);
+  const canonicalRef = movieRef(idString);
+  const localizationDocRef = localizationRef(idString, language);
+
   try {
-    // 1. Check if the movie is already cached in our global 'movies' collection
-    const movieRef = doc(db, "movies", String(id));
-    const movieSnap = await getDoc(movieRef);
+    const [canonicalSnap, localizationSnap] = await Promise.all([
+      getDoc(canonicalRef),
+      getDoc(localizationDocRef),
+    ]);
 
-    if (movieSnap.exists()) {
-      const cachedMovie = movieSnap.data();
-      // Cached descriptions and titles are language-specific.
-      if ((cachedMovie.contentLanguage || "tr-TR") === language && (cachedMovie.contentRegion || "TR") === region) {
-        return cachedMovie;
-      }
+    if (!options.forceRefresh && canonicalSnap.exists() && localizationSnap.exists()) {
+      return {
+        ...canonicalSnap.data(),
+        ...localizationSnap.data(),
+        id: canonicalSnap.data().id || Number(idString),
+      };
     }
 
-    // 2. If not found or cached in another language, fetch from TMDB
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-    const res = await fetch(
-      `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}&language=${encodeURIComponent(language)}&region=${encodeURIComponent(region)}&append_to_response=videos,credits`
+    const response = await fetch(
+      `https://api.themoviedb.org/3/movie/${idString}?api_key=${apiKey}&language=${encodeURIComponent(language)}&region=${encodeURIComponent(region)}&append_to_response=videos,credits`,
     );
+    if (!response.ok) throw new Error("Failed to fetch movie from TMDB");
 
-    if (!res.ok) {
-      throw new Error("Failed to fetch movie from TMDB");
-    }
+    const data = await response.json();
+    const movieData = normalizeMovie(data);
+    const localizedData = normalizeLocalization(data, language);
 
-    const data = await res.json();
+    await Promise.all([
+      setDoc(canonicalRef, { ...movieData, schemaVersion: 2, updatedAt: serverTimestamp() }, { merge: true }),
+      setDoc(localizationDocRef, { ...localizedData, updatedAt: serverTimestamp() }, { merge: true }),
+    ]);
 
-    // Clean up and format the data before saving
-    const movieData = {
-      id: data.id,
-      contentLanguage: language,
-      contentRegion: region,
-      title: data.title || data.original_title,
-      overview: data.overview,
-      posterPath: data.poster_path,
-      backdropPath: data.backdrop_path,
-      releaseDate: data.release_date,
-      runtime: data.runtime,
-      genres: data.genres?.map((g) => g.name) || [],
-      voteAverage: data.vote_average ? Math.round(data.vote_average * 10) / 10 : null,
-      voteCount: data.vote_count || 0,
-      // Cache max 1 trailer and 5 cast members to save DB space
-      trailer: data.videos?.results?.find(v => v.type === "Trailer" && v.site === "YouTube")?.key || null,
-      cast: data.credits?.cast?.slice(0, 5).map(c => ({ name: c.name, character: c.character, profilePath: c.profile_path })) || [],
-    };
-
-    // 3. Save to global 'movies' collection
-    await setDoc(movieRef, movieData);
-
-    return movieData;
+    return { ...movieData, ...localizedData };
   } catch (error) {
     console.error("fetchAndCacheMovie error:", error);
-    return null;
+    const legacySnap = await getDoc(canonicalRef).catch(() => null);
+    return legacyMovie(legacySnap?.exists() ? legacySnap.data() : null, language, region);
   }
 }
 
@@ -80,13 +118,23 @@ function normalizeProviders(data, region) {
 }
 
 export async function fetchWatchProviders(id, region = "TR") {
+  const cachedRef = providerRef(id, region);
+
   try {
+    const cachedSnap = await getDoc(cachedRef);
+    if (cachedSnap.exists()) return cachedSnap.data();
+
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-    const res = await fetch(
+    const response = await fetch(
       `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=${apiKey}`
     );
-    if (!res.ok) throw new Error("Failed to fetch watch providers from TMDB");
-    return normalizeProviders(await res.json(), region);
+    if (!response.ok) throw new Error("Failed to fetch watch providers from TMDB");
+
+    const providers = normalizeProviders(await response.json(), region);
+    if (providers) {
+      await setDoc(cachedRef, { ...providers, updatedAt: serverTimestamp() }, { merge: true });
+    }
+    return providers;
   } catch (error) {
     console.error("fetchWatchProviders error:", error);
     return null;
