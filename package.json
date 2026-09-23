@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "migrate:firestore:movies": "node scripts/migrate-firestore-movie-cache.mjs"
+    "migrate:firestore:movies": "node scripts/migrate-firestore-movie-cache.mjs",
+    "migrate:firestore:lists": "node scripts/migrate-firestore-lists.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

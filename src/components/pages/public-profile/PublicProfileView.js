@@ -9,6 +9,8 @@ dayjs.extend(relativeTime);
 dayjs.locale("tr");
 import { UserAvatar } from "@/components/BottomNav";
 import { MovieCard } from "@/components/ArchiveUI";
+import { ShowcaseMovieCard } from "@/components/pages/home/HomeListShowcase";
+import HorizontalMovieRail from "@/components/HorizontalMovieRail";
 
 export function PublicProfileLoading() {
   return (
@@ -222,6 +224,29 @@ function MovieArchive({ movies, sortedMovies, activeTab, myMovies }) {
   );
 }
 
+function PublicLists({ t, lists, listMovies }) {
+  const visibleLists = lists.filter((list) => (listMovies[list.id] || []).length > 0);
+  if (!visibleLists.length) return null;
+
+  return (
+    <section className="mt-8 border-t border-white/9 px-5 pt-7">
+      <h2 className="mb-5 font-display text-xl font-extrabold text-white">Herkese Açık Listeler</h2>
+      <div className="flex flex-col gap-8">
+        {visibleLists.map((list) => (
+          <div key={list.id}>
+            <h3 className="mb-3 font-display text-lg font-bold text-white">{list.name}</h3>
+            <HorizontalMovieRail className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-3 snap-x snap-mandatory [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/25">
+              {(listMovies[list.id] || []).map((movie) => (
+                <ShowcaseMovieCard key={movie.id} movie={movie} watchedLabel={t("profile.watched")} />
+              ))}
+            </HorizontalMovieRail>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function PublicProfileView({
   targetUser,
   isFriend,
@@ -235,6 +260,9 @@ export default function PublicProfileView({
   onTabChange,
   sortedMovies,
   myMovies,
+  t,
+  publicLists,
+  publicListMovies,
 }) {
   return (
     <div className="min-h-full bg-zinc-950 text-zinc-150 pb-20 flex flex-col relative overflow-hidden">
@@ -259,6 +287,7 @@ export default function PublicProfileView({
           myMovies={myMovies}
         />
       </div>
+      <PublicLists t={t} lists={publicLists} listMovies={publicListMovies} />
     </div>
   );
 }

@@ -1,7 +1,23 @@
 import { CalendarDays, CheckCircle, Forward, PlusCircle, RotateCcw, Trash2 } from "lucide-react";
 import clsx from "clsx";
+import { useState } from "react";
 
-export default function MovieActions({ userData, saving, onWatchNow, onWatchPast, onWatchNoDate, onUpdateStatus, onRemove, onRecommend, t }) {
+export default function MovieActions({ userData, saving, onWatchNow, onWatchPast, onWatchNoDate, onUpdateStatus, onRemove, onRecommend, customLists = [], onAddToCustomList, t }) {
+  const [selectedListId, setSelectedListId] = useState("");
+  const [listStatus, setListStatus] = useState("idle");
+
+  const handleAddToList = async () => {
+    if (!selectedListId || !onAddToCustomList) return;
+    setListStatus("saving");
+    try {
+      await onAddToCustomList(selectedListId);
+      setListStatus("saved");
+    } catch (error) {
+      console.error("Add to list error:", error);
+      setListStatus("error");
+    }
+  };
+
   return (
     <>
       {/* Action Buttons */}
@@ -16,14 +32,20 @@ export default function MovieActions({ userData, saving, onWatchNow, onWatchPast
         <div className="flex gap-2 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/50 backdrop-blur-sm">
           {!userData ? <button onClick={() => onUpdateStatus("wishlist")} disabled={saving} className="flex min-h-11 flex-1 items-center justify-center gap-2.25 rounded-[10px] bg-gold px-5.5 py-3 font-body text-sm font-bold text-gold-ink transition hover:-translate-y-px hover:brightness-[1.08] disabled:opacity-50"><PlusCircle size={18} /> {t("movie.addWishlist")}</button> : <div className="w-full flex items-center justify-between px-2">
             <span className={clsx("text-sm font-medium flex items-center gap-2", userData.status === "watched" ? "text-emerald-500" : "text-amber-500")}>{userData.status === "watched" ? <CheckCircle size={18} /> : <PlusCircle size={18} />}{userData.status === "watched" ? t("profile.watched") : t("movie.inWishlist")}</span>
-            <div className="flex gap-2">
-              {userData.status === "watched" && <button onClick={() => onUpdateStatus("wishlist")} disabled={saving} className="p-2 bg-amber-500/20 text-amber-400 rounded-xl hover:bg-amber-500/30 transition text-xs font-medium px-3">{t("movie.moveWishlist")}</button>}
-              {userData.status === "wishlist" && <button onClick={() => onUpdateStatus("watched")} disabled={saving} className="p-2 bg-emerald-500/20 text-emerald-500 rounded-xl hover:bg-emerald-500/30 transition"><CheckCircle size={18} /></button>}
-              <button onClick={onRemove} disabled={saving} className="p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition"><Trash2 size={18} /></button>
-            </div>
+            <button onClick={onRemove} disabled={saving} className="p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition"><Trash2 size={18} /></button>
           </div>}
         </div>
       </div>
+      {customLists.length > 0 && (
+        <div className="flex gap-2">
+          <select value={selectedListId} onChange={(event) => { setSelectedListId(event.target.value); setListStatus("idle"); }} className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-white/16 bg-surface1 px-3 text-xs text-ivory outline-none">
+            <option value="" disabled>{t("movie.chooseList")}</option>
+            {customLists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+          </select>
+          <button type="button" onClick={handleAddToList} disabled={!selectedListId || listStatus === "saving"} className="min-h-11 rounded-[10px] border border-white/16 px-3 text-xs font-bold text-ivory hover:bg-ivory/5 disabled:opacity-50">{t("movie.addToList")}</button>
+        </div>
+      )}
+      {listStatus !== "idle" && <p className={clsx("text-xs", listStatus === "error" ? "text-rose-400" : "text-gold")} role="status">{listStatus === "saving" ? t("common.saving") : listStatus === "saved" ? t("lists.added") : t("common.error")}</p>}
       {/* Recommend */}
       <button onClick={onRecommend} className="flex min-h-11 w-full items-center justify-center gap-2.25 rounded-[10px] border border-white/16 bg-transparent px-4 py-3 font-body text-sm font-bold text-ivory transition hover:-translate-y-px hover:bg-ivory/4 disabled:opacity-50"><Forward size={17} />{t("movie.recommend")}</button>
     </>

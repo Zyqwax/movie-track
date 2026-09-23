@@ -1,38 +1,5 @@
 import { ArrowUpDown, ChevronDown, Image as ImageIcon } from "lucide-react";
-import clsx from "clsx";
-import dayjs from "dayjs";
 import { MovieCard } from "@/components/ArchiveUI";
-
-// ── Watched movie grouping ─────────────────────────────────────────────────
-export function groupWatchedMoviesByMonth(movies, dayjsLocale, sortKey, undatedLabel) {
-  const groups = new Map();
-
-  movies.forEach((movie) => {
-    const hasDate = movie.watchedAt != null && movie.watchedAt !== 0;
-    const key = hasDate ? dayjs(movie.watchedAt).format("YYYY-MM") : "undated";
-    const group = groups.get(key) || { key, movies: [] };
-    group.movies.push(movie);
-    groups.set(key, group);
-  });
-
-  const monthDirection = sortKey === "watchedAt_asc" ? 1 : -1;
-
-  return [...groups.values()]
-    .sort((a, b) => {
-      if (a.key === "undated") return 1;
-      if (b.key === "undated") return -1;
-      return monthDirection * a.key.localeCompare(b.key);
-    })
-    .map((group) => ({
-      ...group,
-      label:
-        group.key === "undated"
-          ? dayjsLocale === "tr"
-            ? undatedLabel
-            : undatedLabel
-          : dayjs(`${group.key}-01`).locale(dayjsLocale).format("MMMM YYYY"),
-    }));
-}
 
 export default function HomeLibrarySection({
   t,
@@ -52,29 +19,8 @@ export default function HomeLibrarySection({
   return (
     <section className="mt-9 border-2 p-7 rounded-[18px] border-white/16">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3.5">
-        <div className="flex gap-6">
-          {[
-            ["wishlist", t("home.wishlist"), wishlist.length],
-            ["watched", t("home.watched"), watched.length],
-          ].map(([id, label, count]) => (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={activeTab === id}
-              onClick={() => onTabChange(id)}
-              className={clsx(
-                "relative min-h-11 border-0 bg-transparent py-2 pb-2.5 font-display text-[15px] font-extrabold uppercase tracking-[0.04em]",
-                activeTab === id
-                  ? "text-ivory after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-gold"
-                  : "text-muted",
-              )}
-            >
-              {label}{" "}
-              <small className="font-mono text-[10.5px] font-normal text-muted">
-                {count}
-              </small>
-            </button>
-          ))}
+        <div className="relative min-h-11 py-2 pb-2.5 font-display text-[15px] font-extrabold uppercase tracking-[0.04em] text-ivory after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-gold">
+          {t("home.wishlist")} <small className="font-mono text-[10.5px] font-normal text-muted">{wishlist.length}</small>
         </div>
         <div className="relative" ref={sortRef}>
           <button
@@ -103,44 +49,11 @@ export default function HomeLibrarySection({
         </div>
       </div>
       {listed.length ? (
-        sortKey.startsWith("watchedAt_") && activeTab === "watched" ? (
-          <div className="space-y-7">
-            {groupWatchedMoviesByMonth(listed, dayjsLocale, sortKey, t("home.undated")).map((group) => (
-              <section key={group.key} aria-labelledby={`watched-${group.key}`}>
-                <h3
-                  id={`watched-${group.key}`}
-                  className="mb-3 border-b border-white/10 pb-2 font-display text-sm font-extrabold uppercase tracking-[0.08em] text-gold"
-                >
-                  {group.label}
-                </h3>
-                <div className="grid grid-cols-2 gap-[18px] max-md:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {group.movies.map((movie) => (
-                    <MovieCard
-                      key={movie.id}
-                      movie={movie}
-                      rating={movie.rating}
-                      subtitle={
-                        movie.watchedAt
-                          ? dayjs(movie.watchedAt).locale(dayjsLocale).fromNow()
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-[18px] max-md:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {listed.map((movie) => (
-              <MovieCard
-                key={movie.id}
-                movie={movie}
-                rating={activeTab === "watched" ? movie.rating : null}
-              />
-            ))}
-          </div>
-        )
+        <div className="grid grid-cols-2 gap-[18px] max-md:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {listed.map((movie) => (
+            <MovieCard key={movie.id} movie={movie} rating={movie.rating} status={movie.isWatched ? t("profile.watched") : undefined} />
+          ))}
+        </div>
       ) : (
         <div className="flex flex-col items-center gap-2.25 px-5 py-15 text-center text-muted">
           <ImageIcon size={28} />

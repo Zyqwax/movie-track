@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 const NavigationContext = createContext(null);
 
 export function NavigationProvider({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {

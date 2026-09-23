@@ -44,7 +44,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   // ── Derived archive data ────────────────────────────────────────────────
-  const watched = movies?.filter((movie) => movie.status === "watched") || [];
+  const watched = movies?.filter((movie) => movie.isWatched) || [];
   const wishlist = movies?.filter((movie) => movie.status === "wishlist") || [];
   const ratedMovies = watched.filter((movie) => movie.rating > 0);
   const avgRating =

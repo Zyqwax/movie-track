@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -12,78 +12,71 @@ import HomeView from "@/components/pages/home/HomeView";
 
 dayjs.extend(relativeTime);
 
-// ── Sort configuration ──────────────────────────────────────────────────────
 const SORT_VALUES = {
   wishlist: ["addedAt_desc", "addedAt_asc", "title_asc", "title_desc"],
-  watched: ["watchedAt_desc", "watchedAt_asc", "rating_desc", "rating_asc", "title_asc"],
 };
 
 function sortMovies(movies, sortKey, locale) {
   const [field, dir] = sortKey.split("_");
   return [...movies].sort((a, b) => {
-    if (field === "title")
+    if (field === "title") {
       return dir === "asc"
         ? (a.title || "").localeCompare(b.title || "", locale)
         : (b.title || "").localeCompare(a.title || "", locale);
+    }
     const av = a[field] || 0;
     const bv = b[field] || 0;
     return dir === "asc" ? av - bv : bv - av;
   });
 }
 
-// ── Page controller ─────────────────────────────────────────────────────────
 export default function Home() {
   const { user, loading, language } = useAuth();
   const t = (key, values) => translate(language, key, values);
-  const { movies } = useAppData();
+  const { movies, lists, listMovies, watchedMovieIds } = useAppData();
   const router = useRouter();
+
   const [activeTab, setActiveTab] = useState(() =>
-    typeof window !== "undefined"
-      ? sessionStorage.getItem("movieTracker_homeTab") || "wishlist"
-      : "wishlist",
+    typeof window !== "undefined" ? sessionStorage.getItem("movieTracker_homeTab") || "wishlist" : "wishlist",
   );
+
   const [sortKey, setSortKey] = useState(() =>
     typeof window !== "undefined"
-      ? sessionStorage.getItem("movieTracker_homeSortKey") || "addedAt_desc"
+      ? SORT_VALUES.wishlist.includes(sessionStorage.getItem("movieTracker_homeSortKey"))
+        ? sessionStorage.getItem("movieTracker_homeSortKey")
+        : "addedAt_desc"
       : "addedAt_desc",
   );
+
   const [sortOpen, setSortOpen] = useState(false);
   const sortRef = useRef(null);
   const [heroMovieId, setHeroMovieId] = useState(null);
 
-  useEffect(() => {
-    if (!movies || heroMovieId) return;
-    const list = movies.filter((m) => m.status === "wishlist");
-    if (!list.length) return;
-    const timeoutId = setTimeout(
-      () => setHeroMovieId(list[Math.floor(Math.random() * list.length)].id),
-      0,
-    );
-    return () => clearTimeout(timeoutId);
-  }, [movies, heroMovieId]);
+  // Wishlist ve Watched türetilen verileri
+  const wishlist = useMemo(() => movies?.filter((m) => m.status === "wishlist") || [], [movies]);
+  const watched = useMemo(() => movies?.filter((m) => m.isWatched) || [], [movies]);
+
   useEffect(() => {
     if (!loading && user === null) router.push("/login");
   }, [user, loading, router]);
+
+  // Dropdown dışı tıklama kontrolü
   useEffect(() => {
     const close = (event) => {
-      if (sortRef.current && !sortRef.current.contains(event.target))
+      if (sortRef.current && !sortRef.current.contains(event.target)) {
         setSortOpen(false);
+      }
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
+
   if (loading) return <div className="min-h-screen bg-void" />;
   if (!user) return null;
 
-  // ── Derived view data ─────────────────────────────────────────────────────
-  const wishlist = movies?.filter((m) => m.status === "wishlist") || [];
-  const watched = movies?.filter((m) => m.status === "watched") || [];
   const hero = wishlist.find((m) => m.id === heroMovieId) || wishlist[0];
-  const listed = sortMovies(
-    movies?.filter((m) => m.status === activeTab) || [],
-    sortKey,
-    language,
-  );
+  const listed = sortMovies(wishlist, sortKey, language);
+
   const sortLabels = {
     addedAt_desc: t("home.sortAddedDesc"),
     addedAt_asc: t("home.sortAddedAsc"),
@@ -94,18 +87,25 @@ export default function Home() {
     title_asc: t("home.sortTitleAsc"),
     title_desc: t("home.sortTitleDesc"),
   };
-  const options = SORT_VALUES[activeTab].map((value) => ({ value, label: sortLabels[value] }));
+
+  const options = SORT_VALUES.wishlist.map((value) => ({
+    value,
+    label: sortLabels[value] || value,
+  }));
+
   const changeTab = (tab) => {
-    const nextSort = tab === "wishlist" ? "addedAt_desc" : "watchedAt_desc";
     setActiveTab(tab);
-    setSortKey(nextSort);
     sessionStorage.setItem("movieTracker_homeTab", tab);
-    sessionStorage.setItem("movieTracker_homeSortKey", nextSort);
   };
+
   const shuffle = () => {
-    if (wishlist.length)
-      setHeroMovieId(wishlist[Math.floor(Math.random() * wishlist.length)].id);
+    if (wishlist.length) {
+      const nextList = wishlist.filter((m) => m.id !== heroMovieId);
+      const target = nextList.length ? nextList : wishlist;
+      setHeroMovieId(target[Math.floor(Math.random() * target.length)].id);
+    }
   };
+
   const changeSort = (value) => {
     setSortKey(value);
     sessionStorage.setItem("movieTracker_homeSortKey", value);
@@ -129,6 +129,9 @@ export default function Home() {
       onTabChange={changeTab}
       onSortToggle={() => setSortOpen((open) => !open)}
       onSortChange={changeSort}
+      lists={lists}
+      listMovies={listMovies}
+      watchedMovieIds={watchedMovieIds}
     />
   );
 }

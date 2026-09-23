@@ -1,6 +1,6 @@
 "use client";
 
-import { Film, Home, Menu, MessageCircle, Search, User, X } from "lucide-react";
+import { Film, Home, List, Menu, MessageCircle, Search, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 const navItems = [
   { key: "home", href: "/", icon: Home },
   { key: "discover", href: "/search", icon: Search },
+  { key: "lists", href: "/lists", icon: List },
   { key: "messages", href: "/messages", icon: MessageCircle },
 ];
 
@@ -77,13 +78,18 @@ function Sidebar({ pathname, user, language, hasUnread, sidebarOpen, mobileMenuO
   const t = (key, values) => translate(language, key, values);
   return (
     <>
-      {mobileMenuOpen && (
-        <button type="button" className="fixed inset-0 z-[55] bg-black/65 md:hidden" onClick={onClose} aria-label={t("nav.closeMenu")} />
+      {(mobileMenuOpen || sidebarOpen) && (
+        <button
+          type="button"
+          className="fixed inset-0 top-16 z-[55] bg-transparent max-md:top-0 max-md:bg-black/65"
+          onClick={onClose}
+          aria-label={t("nav.closeMenu")}
+        />
       )}
       <aside
         id="movie-tracker-sidebar"
         className={clsx(
-          "fixed z-[60] flex w-72 flex-col border-r border-white/9 bg-surface1 px-4 pb-5 pt-5 shadow-2xl shadow-black/30 transition-transform duration-200 md:inset-y-0 md:left-0 md:top-16 md:w-64 md:shadow-none",
+          "fixed z-[60] flex w-72 flex-col border-r border-white/9 bg-surface1 px-4 pb-5 pt-5 shadow-2xl shadow-black/30 transition-transform duration-200 md:bottom-0 md:left-0 md:top-16 md:w-64 md:shadow-none",
           mobileMenuOpen ? "inset-y-0 left-0 translate-x-0" : "inset-y-0 left-0 -translate-x-full",
           sidebarOpen ? "md:translate-x-0" : "md:-translate-x-full",
         )}
@@ -260,7 +266,18 @@ export default function BottomNav() {
           )}
         </div>
       </header>
-      <Sidebar pathname={pathname} user={user} language={language} hasUnread={hasUnread} sidebarOpen={sidebarOpen} mobileMenuOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      <Sidebar
+        pathname={pathname}
+        user={user}
+        language={language}
+        hasUnread={hasUnread}
+        sidebarOpen={sidebarOpen}
+        mobileMenuOpen={mobileMenuOpen}
+        onClose={() => {
+          setSidebarOpen(false);
+          setMobileMenuOpen(false);
+        }}
+      />
     </>
   );
 }

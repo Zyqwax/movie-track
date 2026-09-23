@@ -1,19 +1,46 @@
-import { Dices, Image as ImageIcon } from "lucide-react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Dices, Image as ImageIcon, Play } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import clsx from "clsx";
-import { PerfStrip, TicketStub } from "@/components/ArchiveUI";
+import { TicketStub } from "@/components/ArchiveUI";
 
 const buttonBase =
   "flex min-h-11 items-center justify-center gap-2 rounded-[10px] px-5.5 py-3 text-sm font-bold transition-[transform,filter,background] duration-150";
 
 export default function HomeHero({ hero, t, wishlist, watched, onShuffle }) {
+  const slides = useMemo(
+    () => wishlist
+      .filter((movie) => movie.backdropPath || movie.posterPath || movie.poster_path)
+      .slice(0, 5),
+    [wishlist],
+  );
+  const [activeIndex, setActiveIndex] = useState(0);
+  const activeMovie = slides[activeIndex] || hero;
+
+  useEffect(() => {
+    if (!slides.length) return undefined;
+    const timer = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % slides.length);
+    }, 7000);
+    return () => window.clearInterval(timer);
+  }, [slides.length]);
+
+  const move = (direction) => {
+    if (!slides.length) return;
+    setActiveIndex((index) => (index + direction + slides.length) % slides.length);
+  };
+
+  const backdrop = activeMovie?.backdropPath || activeMovie?.posterPath || activeMovie?.poster_path;
   return (
-    <section className="relative mb-1.5 overflow-hidden rounded-[18px] border-2 border-white/16 archive-hero-background px-10 pt-11 max-md:px-5 max-md:pt-7 py-7">
-      {(hero?.backdropPath || hero?.posterPath || hero?.poster_path) && (
+    <section className="relative isolate -mx-6 mb-1.5 h-[570px] overflow-hidden bg-[#071116] max-lg:-mx-6 max-md:-mx-4 max-md:h-[610px]">
+      {backdrop && (
         <Image
-          className="absolute inset-0 z-0 h-full w-full object-cover opacity-40"
-          src={`https://image.tmdb.org/t/p/${hero?.backdropPath ? "original" : "w780"}${hero.backdropPath || hero.posterPath || hero.poster_path}`}
+          key={activeMovie.id}
+          className="absolute inset-0 z-0 h-full w-full object-cover object-center opacity-90 transition-opacity duration-500"
+          src={`https://image.tmdb.org/t/p/${activeMovie.backdropPath ? "original" : "w780"}${backdrop}`}
           alt=""
           fill
           priority
@@ -21,66 +48,90 @@ export default function HomeHero({ hero, t, wishlist, watched, onShuffle }) {
           unoptimized
         />
       )}
-      <div className="pointer-events-none absolute inset-0 z-1 bg-linear-to-r from-void/90 via-void/56 via-45% to-void/82" />
-      <div className="relative z-2">
-        <PerfStrip className="relative mb-5 opacity-55" />
-        {hero ? (
-          <>
-            <div className="mb-4 inline-flex items-center gap-1.75 rounded-full bg-oxblood px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.09em] text-[#fbdde0]">
-              <Dices size={13} /> {t("home.lucky")}
+      <div className="absolute inset-0 z-1 bg-[linear-gradient(90deg,#071116_0%,rgba(7,17,22,.94)_20%,rgba(7,17,22,.48)_56%,rgba(7,17,22,.1)_100%)] max-md:bg-[linear-gradient(0deg,#071116_5%,rgba(7,17,22,.78)_43%,rgba(7,17,22,.08)_100%)]" />
+      <div className="absolute inset-0 z-1 bg-[linear-gradient(0deg,#071116_0%,transparent_35%,rgba(7,17,22,.22)_100%)]" />
+
+      <div className="relative z-2 flex h-full flex-col justify-end px-10 pb-9 pt-24 max-md:px-5 max-md:pb-7">
+        {activeMovie ? (
+          <div className="max-w-[510px]">
+            <div className="mb-4 inline-flex items-center gap-1.75 rounded-full bg-gold px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-gold-ink">
+              <Play size={12} fill="currentColor" /> {t("home.lucky")}
             </div>
-            <h1 className="mb-4 max-w-175 font-display text-[clamp(42px,6vw,72px)] font-black uppercase leading-[0.88] tracking-[-0.01em]">
-              {hero.title}
+            <h1 className="mb-4 max-w-[470px] font-display text-[clamp(42px,6vw,76px)] font-black uppercase leading-[0.88] tracking-[-0.01em] text-ivory">
+              {activeMovie.title}
             </h1>
-            <div className="mb-6 flex flex-wrap items-center gap-2.5 font-mono text-[12.5px] text-muted">
-              <span>{hero.releaseDate?.slice(0, 4) || "—"}</span>
-              <b className="text-gold-dim">·</b>
+            <div className="mb-4 flex flex-wrap items-center gap-2.5 font-mono text-[12px] text-ivory/75">
+              <span>{activeMovie.releaseDate?.slice(0, 4) || "—"}</span>
+              <b className="text-gold">·</b>
               <span>
-                {hero.runtime
-                  ? `${hero.runtime} ${t("home.runtime")}`
+                {activeMovie.runtime
+                  ? `${activeMovie.runtime} ${t("home.runtime")}`
                   : t("home.archiveRecord")}
               </span>
-              <b className="text-gold-dim">·</b>
-              <span className="rounded-full border border-white/16 px-2.75 py-1 text-[11px] uppercase text-ivory">
-                {hero.genres?.[0] || t("home.film")}
-              </span>
+              <b className="text-gold">·</b>
+              <span>{activeMovie.genres?.[0] || t("home.film")}</span>
             </div>
-            <div className="flex flex-wrap items-end justify-between gap-5 pb-6">
-              <div className="flex w-full gap-3 sm:w-auto">
+            {activeMovie.overview && (
+              <p className="mb-6 line-clamp-3 text-sm leading-6 text-ivory/85">
+                {activeMovie.overview}
+              </p>
+            )}
+            <div className="flex flex-wrap items-end justify-between gap-5">
+              <div className="flex gap-3">
                 <Link
-                  href={`/movie/${hero.id}`}
-                  className={clsx(
-                    buttonBase,
-                    "flex-1 bg-gold text-gold-ink hover:-translate-y-px hover:brightness-[1.08] sm:flex-none",
-                  )}
+                  href={`/movie/${activeMovie.id}`}
+                  className={clsx(buttonBase, "bg-gold text-gold-ink hover:-translate-y-px hover:brightness-[1.08]")}
                 >
                   {t("home.details")}
                 </Link>
                 <button
-                  className={clsx(
-                    buttonBase,
-                    "w-12 border border-white/16 bg-transparent px-3 text-ivory hover:-translate-y-px hover:bg-ivory/4",
-                  )}
-                  onClick={onShuffle}
+                  className={clsx(buttonBase, "w-12 border border-white/20 bg-black/20 px-3 text-ivory hover:bg-white/10")}
+                  onClick={() => {
+                    move(1);
+                    onShuffle?.();
+                  }}
                   aria-label={t("home.shuffle")}
                 >
                   <Dices size={16} />
                 </button>
               </div>
-              <TicketStub
-                wishlist={wishlist.length}
-                watched={watched.length}
-                t={t}
-              />
+              <TicketStub wishlist={wishlist.length} watched={watched.length} t={t} />
             </div>
-          </>
+          </div>
         ) : (
-          <div className="flex min-h-50 items-center justify-center gap-2.5 text-muted">
+          <div className="flex min-h-50 items-center gap-2.5 text-muted">
             <ImageIcon size={28} />
             <span>{t("home.emptyWatchlist")}</span>
           </div>
         )}
-        <PerfStrip className="pb-0" />
+
+        {slides.length > 1 && (
+          <div className="mt-8 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2" aria-label="Önerilen filmler">
+              {slides.map((movie, index) => (
+                <button
+                  key={movie.id}
+                  type="button"
+                  aria-label={movie.title}
+                  aria-current={index === activeIndex}
+                  onClick={() => setActiveIndex(index)}
+                  className={clsx(
+                    "h-1.5 rounded-full transition-all",
+                    index === activeIndex ? "w-8 bg-ivory" : "w-1.5 bg-ivory/35 hover:bg-ivory/70",
+                  )}
+                />
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => move(-1)} aria-label="Önceki film" className="rounded-full border border-white/20 bg-black/20 p-2 text-ivory hover:bg-white/10">
+                <ChevronLeft size={16} />
+              </button>
+              <button type="button" onClick={() => move(1)} aria-label="Sonraki film" className="rounded-full border border-white/20 bg-black/20 p-2 text-ivory hover:bg-white/10">
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

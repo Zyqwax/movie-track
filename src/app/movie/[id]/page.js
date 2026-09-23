@@ -12,9 +12,9 @@ import {
   doc,
   getDoc,
   setDoc,
-  deleteDoc,
   collection,
   addDoc,
+  getDocs,
   serverTimestamp,
   updateDoc,
   arrayUnion,
@@ -32,6 +32,7 @@ import WatchHistory from "@/components/pages/movie-detail/WatchHistory";
 import MovieProviders from "@/components/pages/movie-detail/MovieProviders";
 import MovieRecommendation from "@/components/pages/movie-detail/MovieRecommendation";
 import { MovieOverview, MovieCast, MovieTrailer } from "@/components/pages/movie-detail/MovieSections";
+import { getUserMovieState, removeWishlistMovie, saveWatchLog, saveWishlistMovie, saveWatchedMovie } from "@/lib/user-lists";
 
 dayjs.extend(relativeTime);
 
@@ -53,6 +54,7 @@ export default function MovieDetailPage({ params }) {
   const [providers, setProviders] = useState(null);
   const [providersLoading, setProvidersLoading] = useState(true);
   const [providersError, setProvidersError] = useState(false);
+  const [customLists, setCustomLists] = useState([]);
 
   // ─── Data loading ───
   useEffect(() => {
@@ -75,12 +77,13 @@ export default function MovieDetailPage({ params }) {
       setProviders(providerData);
       setProvidersError(providerData === null);
       if (user && movieData) {
-        const userMovieRef = doc(db, "users", user.uid, "movies", movieId);
-        const userSnap = await getDoc(userMovieRef);
-        if (userSnap.exists()) {
-          setUserData(userSnap.data());
-          setReview(userSnap.data().review || "");
+        const currentState = await getUserMovieState(user.uid, movieId);
+        if (currentState) {
+          setUserData(currentState);
+          setReview(currentState.review || "");
         }
+        const listsSnapshot = await getDocs(collection(db, "users", user.uid, "lists"));
+        setCustomLists(listsSnapshot.docs.map((listDoc) => ({ id: listDoc.id, ...listDoc.data() })).filter((list) => list.type === "custom"));
       }
       setLoading(false);
       setProvidersLoading(false);
@@ -94,7 +97,6 @@ export default function MovieDetailPage({ params }) {
   // ─── Watch history and status CRUD ───
   const addWatchEntry = async (timestampMs) => {
     setSaving(true);
-    const userMovieRef = doc(db, "users", user.uid, "movies", movieId);
     const existingHistory = userData?.watchHistory || [];
     const newData = {
       title: movie.title,
@@ -105,15 +107,19 @@ export default function MovieDetailPage({ params }) {
       rating: userData?.rating || 0,
       review: review || "",
       addedAt: userData?.addedAt || Date.now(),
+      isWatched: true,
     };
-    await setDoc(userMovieRef, newData, { merge: true });
-    setUserData(newData);
+    await Promise.all([
+      saveWishlistMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
+      saveWatchedMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
+      saveWatchLog(user.uid, movieId, newData),
+    ]);
+    setUserData({ ...newData, status: "watched" });
     setSaving(false);
   };
 
   const addWatchEntryNoDate = async () => {
     setSaving(true);
-    const userMovieRef = doc(db, "users", user.uid, "movies", movieId);
     const existingHistory = userData?.watchHistory || [];
     const newData = {
       title: movie.title,
@@ -124,9 +130,14 @@ export default function MovieDetailPage({ params }) {
       rating: userData?.rating || 0,
       review: review || "",
       addedAt: userData?.addedAt || Date.now(),
+      isWatched: true,
     };
-    await setDoc(userMovieRef, newData, { merge: true });
-    setUserData(newData);
+    await Promise.all([
+      saveWishlistMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
+      saveWatchedMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
+      saveWatchLog(user.uid, movieId, newData),
+    ]);
+    setUserData({ ...newData, status: "watched" });
     setSaving(false);
   };
 
@@ -138,6 +149,13 @@ export default function MovieDetailPage({ params }) {
 
   const updateStatus = async (newStatus) => {
     setSaving(true);
+    if (newStatus === "wishlist") {
+      const wishlistData = { title: movie.title, posterPath: movie.posterPath, status: "wishlist", addedAt: userData?.addedAt || Date.now() };
+      await saveWishlistMovie(user.uid, movieId, wishlistData);
+      setUserData({ ...userData, ...wishlistData, status: "wishlist", isWatched: Boolean(userData?.isWatched) });
+      setSaving(false);
+      return;
+    }
     const newData = {
       title: movie.title,
       posterPath: movie.posterPath,
@@ -147,15 +165,16 @@ export default function MovieDetailPage({ params }) {
       rating: userData?.rating || 0,
       review: review || "",
       addedAt: userData?.addedAt || Date.now(),
+      isWatched: true,
     };
-    await setDoc(doc(db, "users", user.uid, "movies", movieId), newData, { merge: true });
-    setUserData(newData);
+    await saveWatchLog(user.uid, movieId, newData);
+    setUserData({ ...newData, status: "watched" });
     setSaving(false);
   };
 
   const removeMovie = async () => {
     setSaving(true);
-    await deleteDoc(doc(db, "users", user.uid, "movies", movieId));
+    await removeWishlistMovie(user.uid, movieId);
     setUserData(null);
     setSaving(false);
   };
@@ -167,7 +186,7 @@ export default function MovieDetailPage({ params }) {
       watchedAt: newHistory.length > 0 ? newHistory[0].ts : null,
       status: newHistory.length > 0 ? "watched" : "wishlist",
     };
-    await setDoc(doc(db, "users", user.uid, "movies", movieId), newData, { merge: true });
+    await saveWatchLog(user.uid, movieId, { ...newData, isWatched: newHistory.length > 0 });
     setUserData(newData);
   };
 
@@ -176,14 +195,14 @@ export default function MovieDetailPage({ params }) {
     if (!userData) return;
     const newData = { ...userData, rating };
     setUserData(newData);
-    await setDoc(doc(db, "users", user.uid, "movies", movieId), newData, { merge: true });
+    await saveWatchLog(user.uid, movieId, newData);
   };
   const saveReview = async () => {
     setSaving(true);
     if (!userData) return;
     const newData = { ...userData, review };
     setUserData(newData);
-    await setDoc(doc(db, "users", user.uid, "movies", movieId), newData, { merge: true });
+    await saveWatchLog(user.uid, movieId, newData);
     setSaving(false);
   };
 
@@ -218,6 +237,15 @@ export default function MovieDetailPage({ params }) {
     });
     setShowRecommendModal(false);
     router.push(`/messages/${chatId}`);
+  };
+
+  const addToCustomList = async (listId) => {
+    await setDoc(doc(db, "users", user.uid, "lists", listId, "movies", movieId), {
+      movieId,
+      title: movie.title,
+      posterPath: movie.posterPath,
+      addedAt: Date.now(),
+    }, { merge: true });
   };
 
   if (authLoading || !user || loading)
@@ -302,6 +330,8 @@ export default function MovieDetailPage({ params }) {
               onUpdateStatus={updateStatus}
               onRemove={removeMovie}
               onRecommend={() => setShowRecommendModal(true)}
+              customLists={customLists}
+              onAddToCustomList={addToCustomList}
               t={t}
             />
             <MovieRatingReview
