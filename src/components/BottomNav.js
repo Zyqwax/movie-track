@@ -1,24 +1,23 @@
 "use client";
 
-import { Film, Home, List, Menu, MessageCircle, Search, User, X } from "lucide-react";
+import { Film, Home, LayoutList, LogOut, Menu, MessageSquare, Search, User, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { twMerge } from "tailwind-merge";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigation } from "@/context/NavigationContext";
 import { db } from "@/lib/firebase";
 import { getLanguageConfig, translate } from "@/lib/i18n";
 import Avatar from "@/components/ui/Avatar";
-import MobileBottomBar from "@/components/ui/MobileBottomBar";
 
 const primaryNavItems = [
   { key: "home", href: "/", icon: Home },
   { key: "discover", href: "/search", icon: Search },
-  { key: "lists", href: "/lists", icon: List },
-  { key: "messages", href: "/messages", icon: MessageCircle },
+  { key: "lists", href: "/lists", icon: LayoutList },
+  { key: "messages", href: "/messages", icon: MessageSquare },
+  { key: "profile", href: "/profile", icon: User },
 ];
 
 function isActive(pathname, href) {
@@ -26,91 +25,109 @@ function isActive(pathname, href) {
 }
 
 function UserAvatar({ user, size = "default", className = "" }) {
-  const dimension = className.includes("h-full") ? "100%" : size === "small" ? 34 : 40;
   return (
     <Avatar
       user={user}
-      size={dimension}
-      className={twMerge(
-        clsx(
-          "bg-linear-to-br from-accent-alt to-accent font-inter text-text shadow-[0_0_0_2px_var(--color-surface),0_0_0_3px_var(--color-accent-glow)]",
-          size === "small" && "text-sm",
-          className,
-        ),
+      size={size === "small" ? 32 : 40}
+      alt={user?.displayName || user?.email || "User avatar"}
+      className={clsx(
+        "bg-accent/15 text-accent ring-1 ring-white/10 transition-all hover:ring-accent/50",
+        className,
       )}
     />
   );
 }
 
-function NavigationLink({ item, pathname, hasUnread, label, onNavigate }) {
+function NavigationLink({ item, pathname, hasUnread, label, onNavigate, mobile = false }) {
   const Icon = item.icon;
   const active = isActive(pathname, item.href);
+
   return (
     <Link
       href={item.href}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "relative flex min-h-11 items-center gap-3 rounded-[var(--radius-md)] px-3.5 py-2.5 text-sm font-semibold no-underline transition-[background-color,color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-        active ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-2 hover:text-text",
+        mobile
+          ? "flex min-h-11 items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          : "inline-flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        mobile && active && "border-l-[3px] border-accent bg-white/[0.08] pl-[calc(0.75rem-3px)] text-text",
+        mobile && !active && "text-muted hover:bg-white/[0.05] hover:text-text",
+        !mobile && active && "bg-white/[0.07] text-text",
+        !mobile && !active && "text-muted hover:bg-white/[0.05] hover:text-text",
       )}
     >
-      <Icon size={18} aria-hidden="true" />
-      <span>{label}</span>
-      {item.href === "/messages" && hasUnread && (
-        <i className="ml-auto h-1.5 w-1.5 rounded-full bg-accent-alt" aria-label="Unread messages" />
-      )}
+      <Icon size={mobile ? 16 : 17} className={clsx("shrink-0", mobile && active ? "text-accent" : "text-current")} aria-hidden="true" />
+      <span className={mobile ? "flex-1" : undefined}>{label}</span>
+      {item.href === "/messages" && hasUnread && <span className="h-1.5 w-1.5 rounded-full bg-accent-alt" aria-label="Unread messages" />}
     </Link>
   );
 }
 
-function Sidebar({ pathname, user, language, hasUnread, sidebarOpen, mobileMenuOpen, onClose }) {
+function MobileSidebar({ pathname, user, language, hasUnread, isOpen, onClose, onLogout }) {
   const t = (key, values) => translate(language, key, values);
+
   return (
     <>
-      {(mobileMenuOpen || sidebarOpen) && (
-        <button
-          type="button"
-          className="fixed inset-0 top-16 z-[55] bg-transparent max-md:top-0 max-md:bg-bg/70 focus-visible:ring-2 focus-visible:ring-accent"
-          onClick={onClose}
-          aria-label={t("nav.closeMenu")}
-        />
-      )}
+      <button
+        type="button"
+        aria-label={t("nav.closeMenu")}
+        aria-hidden={!isOpen}
+        tabIndex={isOpen ? 0 : -1}
+        onClick={onClose}
+        className={clsx(
+          "fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent motion-reduce:transition-none",
+          isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        )}
+      />
       <aside
         id="movie-tracker-sidebar"
         aria-label={t("nav.sidebar")}
+        aria-hidden={!isOpen}
         className={clsx(
-          "fixed z-[60] flex w-72 flex-col border-r border-border bg-surface px-4 pb-5 pt-5 shadow-2xl shadow-black/30 transition-transform duration-200 md:bottom-0 md:left-0 md:top-16 md:w-64 md:shadow-none",
-          mobileMenuOpen ? "inset-y-0 left-0 translate-x-0" : "inset-y-0 left-0 -translate-x-full",
-          sidebarOpen ? "md:translate-x-0" : "md:-translate-x-full",
+          "fixed bottom-0 left-0 top-0 z-[60] flex w-72 flex-col border-r border-white/[0.07] bg-[#0a0a0f]/95 px-3 pb-4 backdrop-blur-xl transition-transform duration-300 ease-out motion-reduce:transition-none",
+          isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="mb-5 flex items-center justify-between border-b border-border px-2 pb-4 md:hidden">
-          <span className="font-syne text-lg font-extrabold tracking-[0.04em] text-text">Movie Tracker</span>
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/[0.06] px-2">
+          <span className="font-syne text-base font-bold text-text">Movie Track</span>
           <button
             type="button"
             onClick={onClose}
-            className="grid min-h-11 min-w-11 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="grid min-h-8 min-w-8 place-items-center rounded-[var(--radius-sm)] text-muted transition-colors hover:bg-white/[0.07] hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             aria-label={t("nav.closeMenu")}
           >
-            <X size={20} aria-hidden="true" />
+            <X size={18} aria-hidden="true" />
           </button>
         </div>
-        <nav className="space-y-1" aria-label={t("nav.main")}>
+
+        <Link
+          href="/profile"
+          onClick={onClose}
+          className="flex items-center gap-3 border-b border-white/[0.06] px-2 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <UserAvatar user={user} />
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-text">{user.displayName || t("nav.user")}</span>
+            <span className="mt-0.5 block truncate text-xs text-muted">{user.email}</span>
+          </span>
+        </Link>
+
+        <nav className="flex flex-col gap-1 px-0 py-5" aria-label={t("nav.main")}>
           {primaryNavItems.map((item) => (
-            <NavigationLink key={item.href} item={item} pathname={pathname} hasUnread={hasUnread} label={t(`nav.${item.key}`)} onNavigate={onClose} />
+            <NavigationLink key={item.href} item={item} pathname={pathname} hasUnread={hasUnread} label={t(`nav.${item.key}`)} onNavigate={onClose} mobile />
           ))}
         </nav>
-        <div className="mt-auto border-t border-border pt-4">
-          <Link
-            href="/profile"
-            onClick={onClose}
-            className="flex min-h-11 items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 text-text no-underline hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+
+        <div className="mt-auto border-t border-white/[0.06] px-0 pt-4">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-danger/[0.08] hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
           >
-            <UserAvatar user={user} size="small" />
-            <span className="min-w-0 flex-1 truncate text-sm font-semibold">{user.displayName || user.email || t("nav.profile")}</span>
-            <User size={16} className="text-muted" aria-hidden="true" />
-          </Link>
+            <LogOut size={16} aria-hidden="true" />
+            {t("nav.logout")}
+          </button>
         </div>
       </aside>
     </>
@@ -120,8 +137,8 @@ function Sidebar({ pathname, user, language, hasUnread, sidebarOpen, mobileMenuO
 export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, language } = useAuth();
-  const { sidebarOpen, setSidebarOpen, mobileMenuOpen, setMobileMenuOpen } = useNavigation();
+  const { user, language, logout } = useAuth();
+  const { mobileMenuOpen, setMobileMenuOpen, setSidebarOpen } = useNavigation();
   const [hasUnread, setHasUnread] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -129,7 +146,6 @@ export default function BottomNav() {
   const searchRef = useRef(null);
   const t = (key, values) => translate(language, key, values);
   const hidden = !user || pathname === "/login";
-  const desktopShellHidden = pathname.startsWith("/messages/");
 
   useEffect(() => {
     if (!user) return undefined;
@@ -182,94 +198,111 @@ export default function BottomNav() {
     };
   }, [suggestionsOpen]);
 
-  const openMovieSuggestion = (movie) => {
-    if (!movie?.id) return;
-    setSuggestionsOpen(false);
-    router.push(`/movie/${movie.id}`);
-  };
-
-  if (hidden) return null;
-
   const closeMenus = () => {
     setSidebarOpen(false);
     setMobileMenuOpen(false);
   };
 
+  const openMovieSuggestion = (movie) => {
+    if (!movie?.id) return;
+    setSuggestionsOpen(false);
+    setSearchInput("");
+    router.push(`/movie/${movie.id}`);
+  };
+
+  const handleLogout = async () => {
+    closeMenus();
+    await logout();
+  };
+
+  if (hidden) return null;
+
   return (
     <>
-      <header className={clsx("sticky top-0 z-50 flex min-h-16 items-center gap-3 border-b border-border bg-bg/90 px-5 backdrop-blur-md max-md:px-3", desktopShellHidden && "hidden")}>
-        <button
-          type="button"
-          className="grid min-h-11 min-w-11 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-text max-md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          aria-label={sidebarOpen ? t("nav.closeSidebar") : t("nav.openSidebar")}
-          aria-controls="movie-tracker-sidebar"
-          aria-expanded={sidebarOpen}
-        >
-          <Menu size={21} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className="grid min-h-11 min-w-11 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-text md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label={t("nav.openMenu")}
-          aria-controls="movie-tracker-sidebar"
-          aria-expanded={mobileMenuOpen}
-        >
-          <Menu size={21} aria-hidden="true" />
-        </button>
-        <Link className="flex shrink-0 items-center gap-2.5 text-text no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" href="/" aria-label={t("nav.homeLink")}>
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[var(--radius-sm)] bg-accent brand-mark-stripes font-syne text-[10px] font-extrabold text-bg">MT</span>
-          <span className="font-syne text-base font-extrabold tracking-[0.04em] max-sm:hidden">Movie Tracker</span>
-        </Link>
-        <div className="relative ml-auto flex min-w-0 flex-1 items-center justify-end gap-2.5">
-          <form
-            ref={searchRef}
-            className="relative flex min-h-11 w-full max-w-3xl items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-muted focus-within:border-accent focus-within:shadow-[0_0_0_3px_var(--color-accent-glow)]"
-            onSubmit={(event) => { event.preventDefault(); openMovieSuggestion(suggestions[0]); }}
-          >
-            <Search aria-hidden="true" size={16} />
-            <input
-              type="search"
-              value={searchInput}
-              onChange={(event) => { setSearchInput(event.target.value); setSuggestions([]); setSuggestionsOpen(true); }}
-              onFocus={() => setSuggestionsOpen(true)}
-              placeholder={t("nav.search")}
-              aria-label={t("nav.search")}
-              aria-autocomplete="list"
-              aria-controls="header-search-suggestions"
-              className="h-10 min-w-0 flex-1 bg-transparent text-sm font-medium text-text outline-none placeholder:text-muted"
-            />
-            {suggestionsOpen && searchInput.trim() && suggestions.length > 0 && (
-              <div id="header-search-suggestions" role="listbox" className="absolute left-0 right-0 top-[calc(100%+0.6rem)] z-[70] overflow-hidden rounded-[var(--radius-md)] border border-border bg-surface-2 p-1.5 shadow-2xl shadow-black/40">
-                {suggestions.map((movie) => (
-                  <button
-                    key={movie.id}
-                    type="button"
-                    role="option"
-                    aria-selected="false"
-                    className="flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-sm text-text hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    onClick={() => openMovieSuggestion(movie)}
-                  >
-                    <span
-                      className="grid h-11 w-8 shrink-0 place-items-center overflow-hidden rounded-[var(--radius-sm)] bg-surface text-accent"
-                      aria-hidden="true"
-                      style={movie.poster_path ? { backgroundImage: `url(https://image.tmdb.org/t/p/w92${movie.poster_path})`, backgroundPosition: "center", backgroundSize: "cover" } : undefined}
+      <header className="fixed inset-x-0 top-0 z-50 hidden h-14 items-center border-b border-border bg-surface px-6 shadow-sm lg:flex">
+        <div className="flex h-full w-full items-center gap-6">
+          <Link href="/" aria-label={t("nav.homeLink")} className="flex shrink-0 items-center gap-2 text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+            <Film size={20} className="text-accent" aria-hidden="true" />
+            <span className="font-syne text-lg font-bold">Movie Track</span>
+          </Link>
+
+          <nav className="flex flex-1 items-center justify-center gap-1" aria-label={t("nav.main")}>
+            {primaryNavItems.map((item) => (
+              <NavigationLink key={item.href} item={item} pathname={pathname} hasUnread={hasUnread} label={t(`nav.${item.key}`)} />
+            ))}
+          </nav>
+
+          <div className="relative flex shrink-0 items-center gap-4">
+            <form
+              ref={searchRef}
+              className="group relative flex h-8 w-48 items-center gap-2 rounded-[var(--radius-full)] border border-white/[0.08] bg-white/[0.06] px-3 text-muted transition-[width,background-color,border-color,box-shadow] duration-300 focus-within:w-72 focus-within:border-accent/50 focus-within:bg-white/[0.09] focus-within:shadow-[0_0_0_3px_var(--color-accent-glow)]"
+              onSubmit={(event) => { event.preventDefault(); openMovieSuggestion(suggestions[0]); }}
+            >
+              <Search aria-hidden="true" size={14} />
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(event) => { setSearchInput(event.target.value); setSuggestions([]); setSuggestionsOpen(true); }}
+                onFocus={() => setSuggestionsOpen(true)}
+                placeholder={t("nav.search")}
+                aria-label={t("nav.search")}
+                aria-autocomplete="list"
+                aria-controls="header-search-suggestions"
+                className="h-full min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-[--color-text-faint]"
+              />
+              {suggestionsOpen && searchInput.trim() && suggestions.length > 0 && (
+                <div id="header-search-suggestions" role="listbox" className="absolute left-0 right-0 top-[calc(100%+0.6rem)] z-[70] overflow-hidden rounded-[var(--radius-md)] border border-border bg-surface-2 p-1.5 shadow-2xl shadow-black/40">
+                  {suggestions.map((movie) => (
+                    <button
+                      key={movie.id}
+                      type="button"
+                      role="option"
+                      aria-selected="false"
+                      className="flex min-h-11 w-full items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-sm text-text hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      onClick={() => openMovieSuggestion(movie)}
                     >
-                      {!movie.poster_path && <Film size={14} />}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{movie.title || movie.original_title}</span>
-                    {movie.release_date && <span className="shrink-0 text-xs text-muted">{movie.release_date.slice(0, 4)}</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </form>
-          {pathname !== "/" && <Link href="/profile" aria-label={t("nav.profileLabel")} className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"><UserAvatar user={user} /></Link>}
+                      <span
+                        className="grid h-11 w-8 shrink-0 place-items-center overflow-hidden rounded-[var(--radius-sm)] bg-surface text-accent"
+                        aria-hidden="true"
+                        style={movie.poster_path ? { backgroundImage: `url(https://image.tmdb.org/t/p/w92${movie.poster_path})`, backgroundPosition: "center", backgroundSize: "cover" } : undefined}
+                      >
+                        {!movie.poster_path && <Film size={14} />}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{movie.title || movie.original_title}</span>
+                      {movie.release_date && <span className="shrink-0 text-xs text-muted">{movie.release_date.slice(0, 4)}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </form>
+            <Link href="/profile" aria-label={t("nav.profileLabel")} className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <UserAvatar user={user} size="small" />
+            </Link>
+          </div>
         </div>
       </header>
-      {!desktopShellHidden && <Sidebar pathname={pathname} user={user} language={language} hasUnread={hasUnread} sidebarOpen={sidebarOpen} mobileMenuOpen={mobileMenuOpen} onClose={closeMenus} />}
-      <MobileBottomBar pathname={pathname} language={language} hasUnread={hasUnread} />
+
+      <button
+        type="button"
+        className="fixed left-4 top-3 z-[61] grid h-9 w-9 place-items-center rounded-[var(--radius-sm)] border border-white/[0.1] bg-white/[0.08] text-text backdrop-blur-sm transition-colors hover:bg-white/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:hidden"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        aria-label={mobileMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
+        aria-controls="movie-tracker-sidebar"
+        aria-expanded={mobileMenuOpen}
+      >
+        <Menu className={clsx("absolute transition-all duration-200 motion-reduce:transition-none", mobileMenuOpen ? "scale-75 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100")} size={20} aria-hidden="true" />
+        <X className={clsx("absolute transition-all duration-200 motion-reduce:transition-none", mobileMenuOpen ? "scale-100 rotate-0 opacity-100" : "-rotate-90 scale-75 opacity-0")} size={20} aria-hidden="true" />
+      </button>
+
+      <MobileSidebar
+        pathname={pathname}
+        user={user}
+        language={language}
+        hasUnread={hasUnread}
+        isOpen={mobileMenuOpen}
+        onClose={closeMenus}
+        onLogout={handleLogout}
+      />
     </>
   );
 }

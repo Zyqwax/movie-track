@@ -22,6 +22,7 @@ import PublicProfileView, {
 } from "@/components/pages/public-profile/PublicProfileView";
 import { fetchAndCacheMovie } from "@/lib/tmdb";
 import { getLanguageConfig, translate } from "@/lib/i18n";
+import { generateListId } from "@/lib/user-lists";
 
 export default function PublicProfilePage(props) {
   const params = use(props.params);
@@ -35,6 +36,7 @@ export default function PublicProfilePage(props) {
   const [publicLists, setPublicLists] = useState([]);
   const [publicListMovies, setPublicListMovies] = useState({});
   const [rawPublicListMovies, setRawPublicListMovies] = useState({});
+  const [publicWatchedMovies, setPublicWatchedMovies] = useState([]);
   const [publicWatchedIds, setPublicWatchedIds] = useState([]);
   const [copyingListId, setCopyingListId] = useState(null);
   const [copyStatus, setCopyStatus] = useState({ id: null, state: "idle" });
@@ -43,6 +45,12 @@ export default function PublicProfilePage(props) {
     ...(myMovies || []).map((movie) => String(movie.id)),
     ...Object.values(listMovies || {}).flat().map((movie) => String(movie.id)),
   ]), [listMovies, myMovies]);
+  const visiblePublicLists = useMemo(() => {
+    const storedWatchedList = publicLists.find((list) => list.id === "watched");
+    const otherLists = publicLists.filter((list) => list.id !== "watched");
+    if (!storedWatchedList && !publicWatchedMovies.length) return publicLists;
+    return [...otherLists, storedWatchedList || { id: "watched", name: "Watched", type: "default", visibility: "public", showOnHome: false }];
+  }, [publicLists, publicWatchedMovies.length]);
 
   // ── Authentication and subscriptions ────────────────────────────────────
   useEffect(() => {
@@ -97,7 +105,16 @@ export default function PublicProfilePage(props) {
       });
       const unsubscribePublicWatchLog = onSnapshot(
         collection(db, "users", targetUid, "watchLog"),
-        (snapshot) => setPublicWatchedIds(snapshot.docs.filter((item) => item.data()?.isWatched).map((item) => item.id)),
+        (snapshot) => {
+          const watchedMovies = snapshot.docs
+            .filter((item) => item.data()?.isWatched)
+            .map((item) => {
+              const data = item.data();
+              return { ...data, id: item.id, movieId: String(data.movieId || item.id) };
+            });
+          setPublicWatchedMovies(watchedMovies);
+          setPublicWatchedIds(watchedMovies.map((movie) => movie.id));
+        },
       );
       return () => {
         unsubscribeFriend();
@@ -111,8 +128,9 @@ export default function PublicProfilePage(props) {
   useEffect(() => {
     let active = true;
     const { tmdb } = getLanguageConfig(language);
-    Promise.all(publicLists.map(async (list) => {
-      const localizedMovies = await Promise.all((rawPublicListMovies[list.id] || []).map(async (savedMovie) => {
+    Promise.all(visiblePublicLists.map(async (list) => {
+      const sourceMovies = list.id === "watched" ? publicWatchedMovies : rawPublicListMovies[list.id] || [];
+      const localizedMovies = await Promise.all(sourceMovies.map(async (savedMovie) => {
         const movieId = savedMovie.movieId || savedMovie.id;
         const normalizedMovieId = String(movieId);
         const localizedMovie = await fetchAndCacheMovie(movieId, tmdb, region);
@@ -138,7 +156,7 @@ export default function PublicProfilePage(props) {
       if (active) setPublicListMovies(Object.fromEntries(entries));
     });
     return () => { active = false; };
-  }, [language, publicLists, publicWatchedIds, rawPublicListMovies, region, viewerListSet, viewerWatchedSet]);
+  }, [language, publicWatchedIds, publicWatchedMovies, rawPublicListMovies, region, viewerListSet, viewerWatchedSet, visiblePublicLists]);
 
   // ── Controller actions ─────────────────────────────────────────────────
   const handleToggleFriend = async () => {
@@ -192,8 +210,8 @@ export default function PublicProfilePage(props) {
     setCopyingListId(list.id);
     setCopyStatus({ id: list.id, state: "saving" });
     try {
-      const copiedListId = `list-${crypto.randomUUID()}`;
-      const sourceMovies = rawPublicListMovies[list.id] || [];
+      const copiedListId = generateListId();
+      const sourceMovies = list.id === "watched" ? publicWatchedMovies : rawPublicListMovies[list.id] || [];
       const sourceName = list.name || (list.id === "wishlist" ? "Wishlist" : "Liste");
       await setDoc(doc(db, "users", user.uid, "lists", copiedListId), {
         id: copiedListId,
@@ -245,7 +263,7 @@ export default function PublicProfilePage(props) {
       copyingListId={copyingListId}
       copyStatus={copyStatus}
       t={t}
-      publicLists={publicLists}
+      publicLists={visiblePublicLists}
       publicListMovies={publicListMovies}
     />
   );

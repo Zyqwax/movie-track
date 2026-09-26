@@ -1,11 +1,11 @@
-export default function PublicStats({ lists = [], listMovies = {}, t }) {
+export default function PublicStats({ ownerName, lists = [], listMovies = {}, t }) {
   const publicLists = lists.filter((list) => list.visibility === "public");
   const totalMovies = publicLists.reduce((total, list) => total + (listMovies[list.id]?.length || 0), 0);
   const wishlistCount = listMovies.wishlist?.length || 0;
   const stats = [
     { value: publicLists.length, label: "Herkese açık liste" },
     { value: totalMovies, label: t("common.film") },
-    { value: wishlistCount, label: t("home.wishlist") },
+    { value: wishlistCount, label: `${ownerName || "User"}'s Wishlist` },
   ];
 
   return (

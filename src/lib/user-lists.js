@@ -1,6 +1,22 @@
 import { collection, deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+const LIST_ID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const LIST_ID_LENGTH = 9;
+
+export function generateListId(length = LIST_ID_LENGTH) {
+  const values = new Uint32Array(length);
+  const cryptoApi = typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
+  if (cryptoApi?.getRandomValues) {
+    cryptoApi.getRandomValues(values);
+  }
+
+  return Array.from(values, (value) => {
+    const randomValue = value || Math.floor(Math.random() * LIST_ID_ALPHABET.length ** 2);
+    return LIST_ID_ALPHABET[randomValue % LIST_ID_ALPHABET.length];
+  }).join("");
+}
+
 export const DEFAULT_LISTS = {
   wishlist: { id: "wishlist", name: "Wishlist", type: "default", visibility: "public", showOnHome: true },
   watched: { id: "watched", name: "Watched", type: "default", visibility: "private", showOnHome: false },

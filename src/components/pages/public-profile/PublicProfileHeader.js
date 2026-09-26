@@ -29,7 +29,7 @@ export default function PublicProfileHeader({ targetUser, isFriend, onBack, onTo
               <h1 className="truncate font-syne text-2xl font-bold text-text sm:text-3xl">
                 {targetUser.displayName || "Kullanıcı"}
               </h1>
-              <p className="mt-1 text-sm text-muted">{t("publicProfile.wishlist")}</p>
+              <p className="mt-1 text-sm text-muted">{targetUser.displayName ? `${targetUser.displayName}'s Wishlist` : "Wishlist"}</p>
             </div>
           </div>
 

@@ -16,7 +16,7 @@ export default function MovieCard({ movie, loading = false, watchedLabel = "Watc
   return (
     <Link
       href={`/movie/${movie.id}`}
-      className="group relative block aspect-[2/3] w-32 shrink-0 snap-start overflow-hidden rounded-[var(--radius-md)] bg-surface-2 text-text no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-40"
+      className="group relative block aspect-[2/3] w-32 shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-surface-2 text-text no-underline transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-40"
     >
       {poster ? (
         <Image

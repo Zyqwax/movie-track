@@ -5,7 +5,7 @@ import { collection, doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from 
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { ensureDefaultLists } from "@/lib/user-lists";
+import { ensureDefaultLists, generateListId } from "@/lib/user-lists";
 import { translate } from "@/lib/i18n";
 import ListGrid from "@/components/pages/lists/ListGrid";
 import NewListButton from "@/components/pages/lists/NewListButton";
@@ -16,6 +16,7 @@ export default function ListsPage() {
   const router = useRouter();
   const t = (key, values) => translate(language, key, values);
   const [lists, setLists] = useState([]);
+  const [listMovies, setListMovies] = useState({});
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -28,9 +29,41 @@ export default function ListsPage() {
   useEffect(() => {
     if (!user) return undefined;
     ensureDefaultLists(user.uid).catch((error) => console.error("Default lists error:", error));
-    return onSnapshot(collection(db, "users", user.uid, "lists"), (snapshot) => {
-      setLists(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort((a, b) => (a.id === "wishlist" ? -1 : b.id === "wishlist" ? 1 : a.id === "watched" ? -1 : b.id === "watched" ? 1 : (a.name || "").localeCompare(b.name || ""))));
-    });
+
+    let movieUnsubscribers = new Map();
+    const unsubscribeLists = onSnapshot(
+      collection(db, "users", user.uid, "lists"),
+      (snapshot) => {
+        const nextLists = snapshot.docs
+          .map((item) => ({ id: item.id, ...item.data() }))
+          .sort((a, b) => (a.id === "wishlist" ? -1 : b.id === "wishlist" ? 1 : a.id === "watched" ? -1 : b.id === "watched" ? 1 : (a.name || "").localeCompare(b.name || "")));
+        setLists(nextLists);
+        movieUnsubscribers.forEach((unsubscribe) => unsubscribe());
+        movieUnsubscribers = new Map();
+        setListMovies({});
+
+        nextLists.forEach((list) => {
+          const unsubscribeMovies = onSnapshot(
+            collection(db, "users", user.uid, "lists", list.id, "movies"),
+            (movieSnapshot) => {
+              const movies = movieSnapshot.docs.map((movieDoc) => ({ id: movieDoc.id, ...movieDoc.data() }));
+              setListMovies((current) => ({ ...current, [list.id]: movies }));
+            },
+            () => setListMovies((current) => ({ ...current, [list.id]: [] })),
+          );
+          movieUnsubscribers.set(list.id, unsubscribeMovies);
+        });
+      },
+      () => {
+        setLists([]);
+        setListMovies({});
+      },
+    );
+
+    return () => {
+      unsubscribeLists();
+      movieUnsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
   }, [user]);
 
   const createList = async (event) => {
@@ -38,7 +71,7 @@ export default function ListsPage() {
     const listName = name.trim();
     if (!listName || !user) return;
     setCreating(true);
-    const id = `list-${crypto.randomUUID()}`;
+    const id = generateListId();
     await setDoc(doc(db, "users", user.uid, "lists", id), { id, name: listName, type: "custom", visibility: "public", showOnHome: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), schemaVersion: 1 });
     setName("");
     setCreating(false);
@@ -61,6 +94,7 @@ export default function ListsPage() {
       </header>
       <ListGrid
         lists={lists}
+        listMovies={listMovies}
         t={t}
         editingId={editingId}
         editingName={editingName}

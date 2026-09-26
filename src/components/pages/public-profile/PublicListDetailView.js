@@ -5,7 +5,7 @@ import ListMovieGrid from "@/components/pages/list-detail/ListMovieGrid";
 
 function listTitle(list, ownerName, t) {
   if (list.id === "wishlist") return `${ownerName || "User"}'s Wishlist`;
-  if (list.id === "watched") return `${ownerName || "User"}'s Watchlist`;
+  if (list.id === "watched") return `${ownerName || "User"}'s Watched`;
   return list.name || t("lists.customHelp");
 }
 

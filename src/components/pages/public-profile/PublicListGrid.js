@@ -6,7 +6,7 @@ import HorizontalMovieRail from "@/components/HorizontalMovieRail";
 
 function listTitle(list, ownerName, t) {
   if (list.id === "wishlist") return `${ownerName || "User"}'s Wishlist`;
-  if (list.id === "watched") return `${ownerName || "User"}'s Watchlist`;
+  if (list.id === "watched") return `${ownerName || "User"}'s Watched`;
   return list.name || t("lists.customHelp");
 }
 
@@ -17,7 +17,7 @@ function PublicMovieCard({ movie, ownerWatchedLabel, viewerWatchedLabel, viewerL
   return (
     <Link
       href={`/movie/${movie.id}`}
-      className="group relative block aspect-[2/3] w-28 shrink-0 snap-start overflow-hidden rounded-[var(--radius-md)] bg-surface-2 text-text transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-36"
+      className="group relative block aspect-[2/3] w-28 shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-surface-2 text-text transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-36"
     >
       {poster ? (
         <Image
@@ -139,7 +139,7 @@ export default function PublicListGrid({
             {!hasLoaded ? (
               <LoadingRail />
             ) : movies.length ? (
-              <HorizontalMovieRail className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide md:gap-4">
+              <HorizontalMovieRail className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide md:gap-4">
                 {movies.map((movie) => (
                   <PublicMovieCard
                     key={movie.id}

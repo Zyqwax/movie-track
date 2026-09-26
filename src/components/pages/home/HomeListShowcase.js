@@ -10,7 +10,7 @@ export function ShowcaseMovieCard({ movie, watchedLabel, className }) {
   return (
     <Link
       href={`/movie/${movie.id}`}
-      className={`group relative block aspect-video w-[280px] shrink-0 snap-start overflow-hidden rounded-xl border border-white/5 bg-surface2 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-gold/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] max-md:w-[75vw] ${className || ""}`}
+      className={`group relative block aspect-video w-[280px] shrink-0 overflow-hidden rounded-xl border border-white/5 bg-surface2 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-gold/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] max-md:w-[75vw] ${className || ""}`}
     >
       {imagePath ? (
         <Image
@@ -106,7 +106,7 @@ export default function HomeListShowcase({ t, lists, listMovies, watchedMovieIds
               </Link>
             </div>
 
-            <HorizontalMovieRail className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 snap-x snap-mandatory scrollbar-hide">
+            <HorizontalMovieRail className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 scrollbar-hide">
               {movies.map((movie) => (
                 <ShowcaseMovieCard key={movie.id} movie={movie} watchedLabel={t("profile.watched")} />
               ))}

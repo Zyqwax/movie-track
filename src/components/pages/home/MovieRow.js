@@ -11,7 +11,7 @@ export default function MovieRow({ movies = [], loading = false, watchedLabel, e
   }
 
   return (
-    <HorizontalMovieRail className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 snap-x snap-mandatory scrollbar-hide md:gap-4">
+    <HorizontalMovieRail className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide md:gap-4">
       {items.map((movie) => <MovieCard key={movie.id} movie={movie} loading={loading} watchedLabel={watchedLabel} />)}
     </HorizontalMovieRail>
   );

@@ -7,6 +7,7 @@ import StatsRow from "@/components/pages/profile/StatsRow";
 import RecentlyWatched from "@/components/pages/profile/RecentlyWatched";
 import PreferencesSection from "@/components/pages/profile/PreferencesSection";
 import PageLoading from "@/components/ui/PageLoading";
+import HorizontalMovieRail from "@/components/HorizontalMovieRail";
 
 export function ProfileLoading() {
   return <PageLoading label="Profil yükleniyor" />;
@@ -33,7 +34,7 @@ function FriendsSection({ friends = [], onShare, t }) {
       </div>
 
       {friends.length ? (
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+        <HorizontalMovieRail className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {friends.map((friend) => (
             <Link
               key={friend.id}
@@ -51,7 +52,7 @@ function FriendsSection({ friends = [], onShare, t }) {
               </span>
             </Link>
           ))}
-        </div>
+        </HorizontalMovieRail>
       ) : (
         <div className="border border-dashed border-border px-4 py-6 text-center">
           <Users size={24} className="mx-auto mb-2 text-faint" aria-hidden="true" />

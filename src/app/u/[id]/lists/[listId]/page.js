@@ -55,6 +55,31 @@ export default function PublicListDetailPage(props) {
     getDoc(doc(db, "users", targetUid)).then((snapshot) => {
       if (snapshot.exists()) setOwnerName(snapshot.data()?.displayName || "User");
     });
+
+    if (listId === "watched") {
+      return onSnapshot(
+        collection(db, "users", targetUid, "watchLog"),
+        (snapshot) => {
+          const watchedMovies = snapshot.docs
+            .filter((item) => item.data()?.isWatched)
+            .map((item) => {
+              const data = item.data();
+              return { ...data, id: item.id, movieId: String(data.movieId || item.id) };
+            });
+          setList({ id: "watched", name: "Watched", type: "default", visibility: "public" });
+          setRawMovies(watchedMovies);
+          setMoviesLoading(false);
+          setLoading(false);
+        },
+        () => {
+          setList(false);
+          setRawMovies([]);
+          setMoviesLoading(false);
+          setLoading(false);
+        },
+      );
+    }
+
     const unsubscribe = onSnapshot(
       doc(db, "users", targetUid, "lists", listId),
       (snapshot) => {
@@ -83,7 +108,7 @@ export default function PublicListDetailPage(props) {
   }, [targetUid, user]);
 
   useEffect(() => {
-    if (!list || list === false) return undefined;
+    if (!list || list === false || listId === "watched") return undefined;
     const unsubscribe = onSnapshot(
       collection(db, "users", targetUid, "lists", listId, "movies"),
       (snapshot) => {

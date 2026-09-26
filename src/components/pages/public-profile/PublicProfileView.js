@@ -54,7 +54,7 @@ export default function PublicProfileView({
         onStartChat={onStartChat}
         t={t}
       />
-      <PublicStats lists={publicLists} listMovies={publicListMovies} t={t} />
+      <PublicStats ownerName={targetUser.displayName} lists={publicLists} listMovies={publicListMovies} t={t} />
       <section className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 md:px-8">
         <PublicListGrid
           targetUid={targetUid}
