@@ -11,7 +11,6 @@ export default function HorizontalMovieRail({ children, className = "" }) {
     const rail = railRef.current;
     if (!rail) return;
     dragRef.current = { active: true, moved: false, startX: event.clientX, startScrollLeft: rail.scrollLeft };
-    rail.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event) => {
@@ -19,7 +18,10 @@ export default function HorizontalMovieRail({ children, className = "" }) {
     const drag = dragRef.current;
     if (!rail || !drag.active) return;
     const distance = event.clientX - drag.startX;
-    if (Math.abs(distance) > 4) drag.moved = true;
+    if (Math.abs(distance) > 8) {
+      drag.moved = true;
+      if (!rail.hasPointerCapture(event.pointerId)) rail.setPointerCapture(event.pointerId);
+    }
     rail.scrollLeft = drag.startScrollLeft - distance;
   };
 

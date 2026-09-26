@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, use } from "react";
+import { useEffect, useMemo, useState, use } from "react";
 import { db } from "@/lib/firebase";
 import {
   doc,
@@ -27,17 +27,22 @@ export default function PublicProfilePage(props) {
   const params = use(props.params);
   const targetUid = params.id;
   const { user, loading: authLoading, language, region } = useAuth();
-  const { movies: myMovies } = useAppData();
+  const { movies: myMovies, watchedMovieIds, listMovies } = useAppData();
   const router = useRouter();
   const [targetUser, setTargetUser] = useState(null);
-  const [movies, setMovies] = useState(undefined);
   const [isFriend, setIsFriend] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("watched");
   const [publicLists, setPublicLists] = useState([]);
   const [publicListMovies, setPublicListMovies] = useState({});
   const [rawPublicListMovies, setRawPublicListMovies] = useState({});
   const [publicWatchedIds, setPublicWatchedIds] = useState([]);
+  const [copyingListId, setCopyingListId] = useState(null);
+  const [copyStatus, setCopyStatus] = useState({ id: null, state: "idle" });
+  const viewerWatchedSet = useMemo(() => new Set((watchedMovieIds || []).map((movieId) => String(movieId))), [watchedMovieIds]);
+  const viewerListSet = useMemo(() => new Set([
+    ...(myMovies || []).map((movie) => String(movie.id)),
+    ...Object.values(listMovies || {}).flat().map((movie) => String(movie.id)),
+  ]), [listMovies, myMovies]);
 
   // ── Authentication and subscriptions ────────────────────────────────────
   useEffect(() => {
@@ -62,14 +67,6 @@ export default function PublicProfilePage(props) {
       };
       fetchUser();
 
-      const moviesQ = query(collection(db, "users", targetUid, "movies"));
-      const unsubscribeMovies = onSnapshot(moviesQ, (snapshot) => {
-        const data = [];
-        snapshot.forEach((movieDoc) =>
-          data.push({ id: movieDoc.id, ...movieDoc.data() }),
-        );
-        setMovies(data);
-      });
       const friendRef = doc(db, "users", user.uid, "friends", targetUid);
       const unsubscribeFriend = onSnapshot(friendRef, (docSnap) => {
         setIsFriend(docSnap.exists());
@@ -103,7 +100,6 @@ export default function PublicProfilePage(props) {
         (snapshot) => setPublicWatchedIds(snapshot.docs.filter((item) => item.data()?.isWatched).map((item) => item.id)),
       );
       return () => {
-        unsubscribeMovies();
         unsubscribeFriend();
         unsubscribePublicLists();
         unsubscribePublicWatchLog();
@@ -118,17 +114,31 @@ export default function PublicProfilePage(props) {
     Promise.all(publicLists.map(async (list) => {
       const localizedMovies = await Promise.all((rawPublicListMovies[list.id] || []).map(async (savedMovie) => {
         const movieId = savedMovie.movieId || savedMovie.id;
+        const normalizedMovieId = String(movieId);
         const localizedMovie = await fetchAndCacheMovie(movieId, tmdb, region);
         return localizedMovie
-          ? { ...savedMovie, ...localizedMovie, id: String(movieId), isWatched: publicWatchedIds.includes(String(movieId)) }
-          : { ...savedMovie, id: String(movieId), isWatched: publicWatchedIds.includes(String(movieId)) };
+          ? {
+              ...savedMovie,
+              ...localizedMovie,
+              id: normalizedMovieId,
+              ownerWatched: publicWatchedIds.includes(normalizedMovieId),
+              viewerWatched: viewerWatchedSet.has(normalizedMovieId),
+              inViewerList: viewerListSet.has(normalizedMovieId),
+            }
+          : {
+              ...savedMovie,
+              id: normalizedMovieId,
+              ownerWatched: publicWatchedIds.includes(normalizedMovieId),
+              viewerWatched: viewerWatchedSet.has(normalizedMovieId),
+              inViewerList: viewerListSet.has(normalizedMovieId),
+            };
       }));
       return [list.id, localizedMovies];
     })).then((entries) => {
       if (active) setPublicListMovies(Object.fromEntries(entries));
     });
     return () => { active = false; };
-  }, [language, publicLists, publicWatchedIds, rawPublicListMovies, region]);
+  }, [language, publicLists, publicWatchedIds, rawPublicListMovies, region, viewerListSet, viewerWatchedSet]);
 
   // ── Controller actions ─────────────────────────────────────────────────
   const handleToggleFriend = async () => {
@@ -177,34 +187,48 @@ export default function PublicProfilePage(props) {
     }
   };
 
+  const handleCopyList = async (list) => {
+    if (!user || copyingListId) return;
+    setCopyingListId(list.id);
+    setCopyStatus({ id: list.id, state: "saving" });
+    try {
+      const copiedListId = `list-${crypto.randomUUID()}`;
+      const sourceMovies = rawPublicListMovies[list.id] || [];
+      const sourceName = list.name || (list.id === "wishlist" ? "Wishlist" : "Liste");
+      await setDoc(doc(db, "users", user.uid, "lists", copiedListId), {
+        id: copiedListId,
+        name: `${sourceName} (kopya)`,
+        type: "custom",
+        visibility: "private",
+        showOnHome: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        schemaVersion: 1,
+      });
+      await Promise.all(sourceMovies.map(async (movie) => {
+        const { id: sourceDocumentId, ...movieData } = movie;
+        const movieId = String(movie.movieId || sourceDocumentId);
+        if (!movieId) return;
+        await setDoc(doc(db, "users", user.uid, "lists", copiedListId, "movies", movieId), {
+          ...movieData,
+          movieId,
+          addedAt: movie.addedAt || Date.now(),
+        }, { merge: true });
+      }));
+      setCopyStatus({ id: list.id, state: "saved" });
+    } catch (error) {
+      console.error("Error copying public list:", error);
+      setCopyStatus({ id: list.id, state: "error" });
+    } finally {
+      setCopyingListId(null);
+    }
+  };
+
   // ── Loading and not-found states ────────────────────────────────────────
   if (authLoading || !user || loading) return <PublicProfileLoading />;
   if (targetUser === false) return <PublicProfileNotFound />;
   if (!targetUser) return null;
 
-  // ── Derived archive data ────────────────────────────────────────────────
-  const watched = movies?.filter((movie) => movie.status === "watched") || [];
-  const wishlist = movies?.filter((movie) => movie.status === "wishlist") || [];
-  const ratedMovies = watched.filter((movie) => movie.rating > 0);
-  const avgRating =
-    ratedMovies.length > 0
-      ? (
-          ratedMovies.reduce((sum, movie) => sum + movie.rating, 0) /
-          ratedMovies.length
-        ).toFixed(1)
-      : null;
-  const displayMovies = activeTab === "watched" ? watched : wishlist;
-  const sortedMovies = [...displayMovies].sort((a, b) => {
-    if (activeTab === "watched") {
-      const aHas = a.watchedAt != null && a.watchedAt !== 0;
-      const bHas = b.watchedAt != null && b.watchedAt !== 0;
-      if (aHas && !bHas) return -1;
-      if (!aHas && bHas) return 1;
-      if (!aHas && !bHas) return 0;
-      return (b.watchedAt || 0) - (a.watchedAt || 0);
-    }
-    return (b.addedAt || 0) - (a.addedAt || 0);
-  });
   const t = (key, values) => translate(language, key, values);
 
   // ── Presentational view ─────────────────────────────────────────────────
@@ -212,17 +236,14 @@ export default function PublicProfilePage(props) {
     <PublicProfileView
       targetUser={targetUser}
       isFriend={isFriend}
-      movies={movies}
-      watched={watched}
-      wishlist={wishlist}
-      avgRating={avgRating}
-      activeTab={activeTab}
+      targetUid={targetUid}
+      ownerName={targetUser.displayName}
       onBack={() => router.back()}
       onToggleFriend={handleToggleFriend}
-      onTabChange={setActiveTab}
-      sortedMovies={sortedMovies}
-      myMovies={myMovies}
       onStartChat={handleStartChat}
+      onCopyList={handleCopyList}
+      copyingListId={copyingListId}
+      copyStatus={copyStatus}
       t={t}
       publicLists={publicLists}
       publicListMovies={publicListMovies}

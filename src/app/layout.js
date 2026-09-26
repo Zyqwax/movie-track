@@ -1,4 +1,18 @@
 import "./globals.css";
+import { Inter, Syne } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter-family",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  display: "swap",
+  variable: "--font-syne-family",
+});
 
 export const metadata = {
   title: "Movie Tracker",
@@ -37,8 +51,8 @@ import { NavigationProvider } from "@/context/NavigationContext";
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="tr" className="h-full antialiased dark" suppressHydrationWarning>
-      <body className="min-h-screen flex flex-col">
+    <html lang="tr" className={`h-full antialiased dark ${inter.variable} ${syne.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col bg-[--color-bg] text-[--color-text] font-inter antialiased">
         <ServiceWorkerRegister />
         <AuthProvider>
           <LanguageSync />

@@ -1,38 +1,72 @@
 import { Film } from "lucide-react";
 
-// ── Login presentation ─────────────────────────────────────────────────────
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" aria-hidden="true">
+      <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36 16.6053 6.549L20.0303 3.125C17.9503 1.19 15.2353 0 12.0003 0C7.31028 0 3.25528 2.69 1.28027 6.609L5.27028 9.704C6.21528 6.86 8.87028 4.75 12.0003 4.75Z" fill="#EA4335" />
+      <path d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z" fill="#4285F4" />
+      <path d="M5.265 14.295C5.025 13.57 4.885 12.8 4.885 12C4.885 11.2 5.02 10.43 5.265 9.705L1.275 6.61C.46 8.23 0 10.06 0 12S.46 15.77 1.28 17.39L5.265 14.295Z" fill="#FBBC05" />
+      <path d="M12 24C15.24 24 17.965 22.935 19.945 21.095L16.08 18.095C15.005 18.82 13.62 19.245 12 19.245C8.87 19.245 6.215 17.135 5.265 14.29L1.275 17.385C3.255 21.31 7.31 24 12 24Z" fill="#34A853" />
+    </svg>
+  );
+}
+
 export default function LoginView({ onLogin, t }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-zinc-950">
-      {/* Subtle gradient glow behind logo */}
-      <div className="relative mb-10">
-        <div className="absolute inset-0 w-24 h-24 bg-rose-500/20 rounded-full blur-2xl" />
-        <div className="relative w-20 h-20 bg-gradient-to-br from-rose-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-rose-500/25 rotate-3">
-          <Film className="w-9 h-9 text-white -rotate-3" />
+    <main className="grid min-h-dvh bg-bg lg:grid-cols-[minmax(0,1.1fr)_minmax(28rem,0.9fr)]">
+      <section className="relative hidden min-h-dvh overflow-hidden border-r border-border lg:flex" aria-hidden="true">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,var(--color-accent-glow),transparent_30%),radial-gradient(circle_at_78%_78%,rgb(255_101_132_/_18%),transparent_28%),linear-gradient(145deg,var(--color-surface),var(--color-bg)_68%)]" />
+        <div className="absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-accent/15 blur-3xl" />
+        <div className="absolute -right-24 bottom-10 h-80 w-80 rounded-full bg-accent-alt/10 blur-3xl" />
+        <div className="relative z-10 flex w-full flex-col justify-between p-10 xl:p-16">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-[var(--radius-md)] bg-accent brand-mark-stripes font-syne text-sm font-extrabold text-bg">MT</span>
+            <span className="font-syne text-lg font-bold text-text">Movie Tracker</span>
+          </div>
+          <div className="max-w-lg">
+            <Film size={42} className="mb-6 text-accent" strokeWidth={1.5} />
+            <p className="mb-4 text-sm font-semibold text-accent">Kendi film arşivin</p>
+            <h2 className="font-syne text-5xl font-bold leading-[1.05] text-text xl:text-6xl">
+              İzlediklerini hatırla, sıradakini keşfet.
+            </h2>
+          </div>
+          <p className="max-w-xs text-sm leading-6 text-muted">Filmlerini, listelerini ve izleme anılarını tek yerde tut.</p>
         </div>
-      </div>
+      </section>
 
-      <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Movie Tracker</h1>
-      <p className="text-zinc-500 mb-12 text-center max-w-[260px] text-sm leading-relaxed">
-        {t("auth.description")}
-      </p>
+      <section className="flex min-h-dvh flex-col px-5 py-6 sm:px-8 lg:px-12">
+        <div className="flex items-center gap-3 lg:hidden">
+          <span className="grid h-10 w-10 place-items-center rounded-[var(--radius-md)] bg-accent brand-mark-stripes font-syne text-xs font-extrabold text-bg">MT</span>
+          <span className="font-syne text-base font-bold text-text">Movie Tracker</span>
+        </div>
 
-      <button
-        onClick={onLogin}
-        className="flex min-h-11 items-center justify-center gap-2.25 rounded-[10px] bg-gold px-5.5 py-3 font-body text-sm font-bold text-gold-ink transition hover:-translate-y-px hover:brightness-[1.08]"
-      >
-        <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
-          <path d="M12.0003 4.75C13.7703 4.75 15.3553 5.36 16.6053 6.549L20.0303 3.125C17.9503 1.19 15.2353 0 12.0003 0C7.31028 0 3.25528 2.69 1.28027 6.609L5.27027 9.704C6.21527 6.86 8.87028 4.75 12.0003 4.75Z" fill="#EA4335" />
-          <path d="M23.49 12.275C23.49 11.49 23.415 10.73 23.3 10H12V14.51H18.47C18.18 15.99 17.34 17.25 16.08 18.1L19.945 21.1C22.2 19.01 23.49 15.92 23.49 12.275Z" fill="#4285F4" />
-          <path d="M5.26498 14.2949C5.02498 13.5699 4.88501 12.7999 4.88501 11.9999C4.88501 11.1999 5.01998 10.4299 5.26498 9.7049L1.275 6.60986C0.46 8.22986 0 10.0599 0 11.9999C0 13.9399 0.46 15.7699 1.28 17.3899L5.26498 14.2949Z" fill="#FBBC05" />
-          <path d="M12.0004 24.0001C15.2404 24.0001 17.9654 22.935 19.9454 21.095L16.0804 18.095C15.0054 18.82 13.6204 19.245 12.0004 19.245C8.87037 19.245 6.21537 17.135 5.26538 14.29L1.27539 17.385C3.25539 21.31 7.31037 24.0001 12.0004 24.0001Z" fill="#34A853" />
-        </svg>
-        {t("auth.google")}
-      </button>
+        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-14">
+          <div className="mb-8">
+            <p className="mb-3 text-sm font-semibold text-accent">Hoş geldin</p>
+            <h1 className="font-syne text-3xl font-bold leading-tight text-text sm:text-4xl">Film arşivine giriş yap.</h1>
+            <p className="mt-4 max-w-sm text-sm leading-6 text-muted">{t("auth.description")}</p>
+          </div>
 
-      <p className="text-[10px] text-zinc-700 mt-8 text-center max-w-[200px]">
-        {t("auth.privacy")}
-      </p>
-    </div>
+          <button
+            type="button"
+            onClick={onLogin}
+            className="flex min-h-12 w-full items-center justify-center gap-3 rounded-[var(--radius-md)] bg-white px-5 text-sm font-semibold text-black transition-[background-color,transform] hover:-translate-y-px hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          >
+            <GoogleMark />
+            {t("auth.google")}
+          </button>
+
+          <div className="mt-8 flex items-center gap-3 text-xs text-faint">
+            <span className="h-px flex-1 bg-border" />
+            <span>Güvenli giriş</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        </div>
+
+        <footer className="mx-auto w-full max-w-md text-center text-xs leading-5 text-muted">
+          {t("auth.privacy")}
+        </footer>
+      </section>
+    </main>
   );
 }

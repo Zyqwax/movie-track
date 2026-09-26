@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
@@ -26,6 +26,7 @@ export default function MessagesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const chatUsersRef = useRef({});
 
   // ── Authentication and realtime chat data ────────────────────────────────
   useEffect(() => {
@@ -55,7 +56,8 @@ export default function MessagesPage() {
       const chatList = [];
       snapshot.forEach((item) => chatList.push({ id: item.id, ...item.data() }));
       setChats(chatList);
-      const profiles = await fetchUserProfiles(chatList, chatUsers);
+      const profiles = await fetchUserProfiles(chatList, chatUsersRef.current);
+      chatUsersRef.current = profiles;
       setChatUsers(profiles);
       setLoading(false);
     });
@@ -93,7 +95,7 @@ export default function MessagesPage() {
   };
 
   // ── Route states ─────────────────────────────────────────────────────────
-  if (authLoading || !user) return <div className="min-h-screen bg-zinc-950 flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" /></div>;
+  if (authLoading || !user) return <div className="flex min-h-dvh items-center justify-center bg-bg" role="status" aria-label="Yükleniyor"><div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" /></div>;
 
   return <ComingSoon />;
 

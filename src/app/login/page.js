@@ -20,8 +20,8 @@ export default function LoginPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" />
+      <div className="flex min-h-dvh items-center justify-center bg-bg">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" role="status" aria-label="Loading" />
       </div>
     );
   if (user) return null;

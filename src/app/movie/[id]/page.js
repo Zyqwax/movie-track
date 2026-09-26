@@ -4,7 +4,6 @@ import { useEffect, useState, use } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { fetchAndCacheMovie, fetchWatchProviders } from "@/lib/tmdb";
 import { getLanguageConfig, getRegionLabel, translate } from "@/lib/i18n";
 import { db } from "@/lib/firebase";
@@ -19,19 +18,20 @@ import {
   updateDoc,
   arrayUnion,
 } from "firebase/firestore";
-import { Calendar, Clock, TrendingUp } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/tr";
 import "dayjs/locale/en";
 import relativeTime from "dayjs/plugin/relativeTime";
 import PastDateModal from "@/components/pages/movie-detail/PastDateModal";
-import MovieBackdropHeader from "@/components/pages/movie-detail/MovieBackdropHeader";
-import MovieActions from "@/components/pages/movie-detail/MovieActions";
-import MovieRatingReview from "@/components/pages/movie-detail/MovieRatingReview";
-import WatchHistory from "@/components/pages/movie-detail/WatchHistory";
-import MovieProviders from "@/components/pages/movie-detail/MovieProviders";
 import MovieRecommendation from "@/components/pages/movie-detail/MovieRecommendation";
-import { MovieOverview, MovieCast, MovieTrailer } from "@/components/pages/movie-detail/MovieSections";
+import MovieHero from "@/components/pages/movie/MovieHero";
+import PageLoading from "@/components/ui/PageLoading";
+import WatchedActions from "@/components/pages/movie/WatchedActions";
+import CastRow from "@/components/pages/movie/CastRow";
+import TrailerButton from "@/components/pages/movie/TrailerButton";
+import ProviderList from "@/components/pages/movie/ProviderList";
+import RatingReview from "@/components/pages/movie/RatingReview";
+import WatchHistory from "@/components/pages/movie/WatchHistory";
 import { getUserMovieState, removeWishlistMovie, saveWatchLog, saveWishlistMovie, saveWatchedMovie } from "@/lib/user-lists";
 
 dayjs.extend(relativeTime);
@@ -249,17 +249,12 @@ export default function MovieDetailPage({ params }) {
   };
 
   if (authLoading || !user || loading)
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-zinc-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" />
-      </div>
-    );
-  if (!movie) return <div className="p-4 text-center text-white mt-10">{t("movie.notFound")}</div>;
+    return <PageLoading />;
+  if (!movie) return <div className="mt-10 bg-bg p-4 text-center text-muted">{t("movie.notFound")}</div>;
   const watchHistory = userData?.watchHistory || [];
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-24">
-      {/* ─── Overlays ─── */}
+    <div className="relative min-h-screen overflow-hidden bg-bg pb-24 text-text">
       {showPastModal && <PastDateModal onConfirm={handlePastDate} onClose={() => setShowPastModal(false)} t={t} />}
       <MovieRecommendation
         open={showRecommendModal}
@@ -269,60 +264,14 @@ export default function MovieDetailPage({ params }) {
         onSelect={recommendMovie}
         t={t}
       />
+      <MovieHero movie={movie} onBack={() => router.back()} t={t} />
 
-      {/* ─── Backdrop and mobile header ─── */}
-      <MovieBackdropHeader movie={movie} onBack={() => router.back()} />
-      <div className="max-w-6xl mx-auto px-4 md:px-8 relative z-10">
-        <div className="flex gap-4 mb-6 -mt-20 md:hidden">
-          <div className="w-28 h-40 rounded-xl overflow-hidden shrink-0 shadow-xl shadow-black/50 border border-zinc-800 relative bg-zinc-800">
-            {movie.posterPath && (
-              <Image
-                src={`https://image.tmdb.org/t/p/w342${movie.posterPath}`}
-                alt={movie.title}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            )}
-          </div>
-          <div className="flex flex-col justify-end pb-2">
-            <h1 className="text-2xl font-bold text-white leading-tight drop-shadow-md mb-2">{movie.title}</h1>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-zinc-300">
-              {movie.releaseDate && (
-                <span className="flex items-center gap-1">
-                  <Calendar size={14} />
-                  {movie.releaseDate.split("-")[0]}
-                </span>
-              )}
-              {movie.runtime > 0 && (
-                <span className="flex items-center gap-1">
-                  <Clock size={14} />
-                  {movie.runtime} dk
-                </span>
-              )}
-              {movie.voteAverage > 0 && (
-                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-400/15 text-amber-300 rounded-full text-[10px] font-bold border border-amber-400/20">
-                  <TrendingUp size={10} />
-                  {movie.voteAverage}/10
-                </span>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {movie.genres.map((g) => (
-                <span key={g} className="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded-full text-[10px]">
-                  {g}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ─── Main two-column layout ─── */}
-        <div className="md:grid md:grid-cols-[320px_1fr] md:gap-8 md:pt-6">
-          {/* ─── Sidebar: actions, rating, history ─── */}
-          <div className="md:sticky md:top-6 md:self-start space-y-3 mb-6 md:mb-0">
-            <MovieActions
+      <main className="relative z-10 mx-auto max-w-7xl px-4 pb-12 md:px-8">
+        <div className="grid items-start gap-8 lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-10">
+          <aside className="order-1 self-start lg:sticky lg:top-6">
+            <WatchedActions
               userData={userData}
+              language={language}
               saving={saving}
               onWatchNow={watchNow}
               onWatchPast={() => setShowPastModal(true)}
@@ -330,12 +279,32 @@ export default function MovieDetailPage({ params }) {
               onUpdateStatus={updateStatus}
               onRemove={removeMovie}
               onRecommend={() => setShowRecommendModal(true)}
+              onRatingFocus={() => document.getElementById("movie-rating")?.scrollIntoView({ behavior: "smooth", block: "center" })}
               customLists={customLists}
               onAddToCustomList={addToCustomList}
               t={t}
             />
-            <MovieRatingReview
+          </aside>
+
+          <div className="order-2 min-w-0 space-y-8">
+            <ProviderList
+              providers={providers}
+              loading={providersLoading}
+              error={providersError}
+              regionLabel={getRegionLabel(region, language)}
+              t={t}
+            />
+
+            <section className="space-y-3 border-l-2 border-accent/60 pl-4" aria-labelledby="movie-overview-heading">
+              <h2 id="movie-overview-heading" className="font-syne text-xl font-semibold text-text">{t("movie.overview")}</h2>
+              <p className="max-w-3xl text-sm leading-7 text-muted">{movie.overview || t("movie.missingOverview")}</p>
+            </section>
+
+            <CastRow cast={movie.cast} t={t} />
+            <TrailerButton trailer={movie.trailer} t={t} />
+            <RatingReview
               userData={userData}
+              language={language}
               review={review}
               saving={saving}
               onRating={updateRating}
@@ -345,22 +314,8 @@ export default function MovieDetailPage({ params }) {
             />
             <WatchHistory history={watchHistory} language={language} onRemove={removeWatchEntry} t={t} />
           </div>
-
-          {/* ─── Content: providers and movie details ─── */}
-          <div className="min-w-0">
-            <MovieProviders
-              providers={providers}
-              loading={providersLoading}
-              error={providersError}
-              regionLabel={getRegionLabel(region, language)}
-              t={t}
-            />
-            <MovieOverview overview={movie.overview} t={t} />
-            <MovieCast cast={movie.cast} t={t} />
-            <MovieTrailer trailer={movie.trailer} t={t} />
-          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

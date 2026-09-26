@@ -5,7 +5,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useRouter } from "next/navigation";
 import { getLanguageConfig, translate } from "@/lib/i18n";
-import SearchView from "@/components/pages/search/SearchView";
+import SearchBar from "@/components/pages/search/SearchBar";
+import TrendGrid from "@/components/pages/search/TrendGrid";
+import SearchResultGrid from "@/components/pages/search/SearchResultGrid";
+import PageLoading from "@/components/ui/PageLoading";
 
 const SEARCH_DEBOUNCE_MS = 800;
 
@@ -142,11 +145,7 @@ export default function SearchPage() {
   };
 
   if (authLoading)
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-rose-500" />
-      </div>
-    );
+    return <PageLoading />;
   if (!user) return null;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -163,19 +162,37 @@ export default function SearchPage() {
     wishlist: t("search.wishlist"),
   };
   return (
-    <SearchView
-      queryInput={queryInput}
-      loading={loading}
-      isDebouncing={isDebouncing}
-      inputRef={inputRef}
-      displayMovies={displayMovies}
-      localMovies={localMovies}
-      isShowingTrending={isShowingTrending}
-      resultsCount={results.length}
-      labels={labels}
-      onInputChange={handleInputChange}
-      onClear={handleClear}
-      onSearch={handleSearch}
-    />
+    <div className="min-h-full bg-bg pb-24 text-text">
+      <div className="mx-auto max-w-6xl px-0 md:px-8">
+        <SearchBar
+          queryInput={queryInput}
+          loading={loading}
+          isDebouncing={isDebouncing}
+          inputRef={inputRef}
+          title={labels.title}
+          placeholder={labels.placeholder}
+          onInputChange={handleInputChange}
+          onClear={handleClear}
+          onSearch={handleSearch}
+        />
+        {isShowingTrending ? (
+          <TrendGrid movies={displayMovies} localMovies={localMovies} title={labels.trending} emptyLabel={labels.noResults} watchedLabel={labels.watched} />
+        ) : (
+          <SearchResultGrid
+            movies={displayMovies}
+            localMovies={localMovies}
+            loading={loading}
+            isDebouncing={isDebouncing}
+            queryInput={queryInput}
+            resultsCount={results.length}
+            resultsLabel={labels.results}
+            noResultsLabel={labels.noResults}
+            tryDifferentLabel={labels.tryDifferent}
+            watchedLabel={labels.watched}
+            wishlistLabel={labels.wishlist}
+          />
+        )}
+      </div>
+    </div>
   );
 }
