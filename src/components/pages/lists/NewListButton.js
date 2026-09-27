@@ -14,7 +14,7 @@ export default function NewListButton({ name, creating, onNameChange, onSubmit, 
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="flex min-h-32 w-full flex-col items-center justify-center gap-3 rounded-[var(--radius-lg)] border border-dashed border-border px-5 text-center text-muted transition-colors hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+      <button type="button" onClick={() => setOpen(true)} className="flex min-h-32 w-full flex-col items-center justify-center gap-3 rounded-[var(--radius-lg)] border border-dashed border-[#41413e] bg-[#171716] px-5 text-center text-muted transition-colors hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
         <span className="flex h-11 w-11 items-center justify-center rounded-full border border-current"><ListPlus size={19} aria-hidden="true" /></span>
         <span className="text-sm font-semibold">{t("lists.create")}</span>
       </button>

@@ -88,9 +88,9 @@ export default function ListsPage() {
   if (authLoading || !user) return <PageLoading />;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-24 pt-8 md:px-8 md:pt-12">
-      <header className="mb-8 flex items-end justify-between gap-4 border-b border-border pb-6">
-        <div><p className="mb-2 text-sm font-medium text-accent">{t("lists.eyebrow")}</p><h1 className="font-syne text-3xl font-bold text-text md:text-4xl">{t("lists.title")}</h1></div>
+    <div className="mx-auto max-w-5xl px-4 pb-24 pt-6 md:px-8 md:pt-10">
+      <header className="mb-4 flex items-end justify-between gap-4">
+        <div><p className="mb-1 text-[11px] font-medium uppercase tracking-widest text-muted">{t("lists.eyebrow")}</p><h1 className="font-syne text-2xl font-semibold text-text md:text-3xl">{t("lists.title")}</h1></div>
       </header>
       <ListGrid
         lists={lists}
