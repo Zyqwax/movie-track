@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { collection, doc, onSnapshot } from "firebase/firestore";
@@ -21,6 +21,8 @@ export default function ListDetailPage() {
   const [list, setList] = useState(null);
   const [rawMovies, setRawMovies] = useState([]);
   const [watchedIds, setWatchedIds] = useState([]);
+  const [watchLogs, setWatchLogs] = useState({});
+  const [wishlistFilter, setWishlistFilter] = useState("all");
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,6 +43,8 @@ export default function ListDetailPage() {
       () => setRawMovies([]),
     );
     const watchLogUnsubscribe = onSnapshot(collection(db, "users", user.uid, "watchLog"), (snapshot) => {
+      const logs = Object.fromEntries(snapshot.docs.map((item) => [item.id, item.data()]));
+      setWatchLogs(logs);
       setWatchedIds(snapshot.docs.filter((item) => item.data()?.isWatched).map((item) => item.id));
     });
     return () => {
@@ -72,6 +76,10 @@ export default function ListDetailPage() {
     };
   }, [language, rawMovies, region]);
 
+  const displayMovies = useMemo(() => movies
+    .map((movie) => ({ ...movie, ...(watchLogs[movie.id] || {}), isWatched: watchedIds.includes(movie.id) }))
+    .filter((movie) => id !== "wishlist" || wishlistFilter === "all" || !movie.isWatched), [id, movies, watchLogs, watchedIds, wishlistFilter]);
+
   if (authLoading || !user || loading) return <PageLoading />;
 
   if (!list) {
@@ -88,13 +96,13 @@ export default function ListDetailPage() {
     );
   }
 
-  const watchedSet = new Set(watchedIds);
-  const displayMovies = movies.map((movie) => ({ ...movie, isWatched: watchedSet.has(movie.id) }));
-
   return (
     <div className="mx-auto max-w-7xl px-4 pb-24 pt-8 md:px-8 md:pt-12">
       <ListHeader list={list} count={displayMovies.length} language={language} t={t} onEdit={() => router.push("/lists")} />
-      <ListMovieGrid movies={displayMovies} language={language} watchedLabel={t("profile.watched")} t={t} />
+      {id === "wishlist" && <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label={language === "tr" ? "Wishlist filtresi" : "Watchlist filter"}>
+        {[{ value: "all", label: language === "tr" ? "Tümü" : "All" }, { value: "unwatched", label: language === "tr" ? "İzlemediklerim" : "Unwatched" }].map((option) => <button key={option.value} type="button" onClick={() => setWishlistFilter(option.value)} aria-pressed={wishlistFilter === option.value} className={`min-h-10 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${wishlistFilter === option.value ? "border-accent bg-accent text-bg" : "border-border text-muted hover:border-accent hover:text-text"}`}>{option.label}</button>)}
+      </div>}
+      <ListMovieGrid movies={displayMovies} language={language} watchedLabel={t("profile.watched")} t={t} isWatchedList={id === "watched"} />
     </div>
   );
 }

@@ -39,6 +39,7 @@ export default function PublicListDetailView({ targetUid, ownerName, list, movie
         viewerListLabel="Senin listende"
         watchedLabel={t("profile.watched")}
         t={t}
+        isWatchedList={list.id === "watched"}
       />
     </main>
   );
