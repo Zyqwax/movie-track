@@ -78,26 +78,40 @@ export const AppDataProvider = ({ children }) => {
 
     ensureDefaultLists(user.uid).catch((error) => console.error("Default lists error:", error));
 
-    // Wishlist membership and watch log are separate: watching never removes a wishlist item.
+    // Combine wishlist movies and watchLog items so that profile and home see both wishlist and watched items
     const wishlistQ = query(collection(db, "users", user.uid, "lists", "wishlist", "movies"));
     const watchLogQ = query(collection(db, "users", user.uid, "watchLog"));
     let active = true;
-    let savedMovies = [];
+    let savedWishlistMovies = [];
     let watchLog = new Map();
     const { tmdb } = getLanguageConfig(language);
     const refreshMovies = async () => {
-      const localizedMovies = await Promise.all(savedMovies.map(async (savedMovie) => {
-        const localizedMovie = await fetchAndCacheMovie(savedMovie.id, tmdb, region);
-        const log = watchLog.get(savedMovie.id);
-        const watchState = { ...(log || {}), status: "wishlist", isWatched: Boolean(log?.isWatched) };
-        return localizedMovie ? { ...savedMovie, ...localizedMovie, ...watchState } : { ...savedMovie, ...watchState };
+      // Gather unique movie IDs from wishlist and watchLog
+      const allMovieMap = new Map();
+      savedWishlistMovies.forEach((m) => {
+        allMovieMap.set(String(m.id), { ...m, status: "wishlist" });
+      });
+      watchLog.forEach((log, movieId) => {
+        const idStr = String(movieId);
+        const existing = allMovieMap.get(idStr);
+        if (log?.isWatched) {
+          allMovieMap.set(idStr, { ...(existing || {}), ...log, id: idStr, status: "watched", isWatched: true });
+        } else if (existing) {
+          allMovieMap.set(idStr, { ...existing, ...log, id: idStr, isWatched: false });
+        }
+      });
+
+      const movieEntries = Array.from(allMovieMap.values());
+      const localizedMovies = await Promise.all(movieEntries.map(async (movieItem) => {
+        const localizedMovie = await fetchAndCacheMovie(movieItem.id, tmdb, region);
+        return localizedMovie ? { ...movieItem, ...localizedMovie } : movieItem;
       }));
       if (!active) return;
       setMovies(localizedMovies);
       setMoviesLoading(false);
     };
     const unsubWishlist = onSnapshot(wishlistQ, (snapshot) => {
-      savedMovies = snapshot.docs.map((movieDoc) => ({ id: movieDoc.id, ...movieDoc.data() }));
+      savedWishlistMovies = snapshot.docs.map((movieDoc) => ({ id: movieDoc.id, ...movieDoc.data() }));
       refreshMovies();
     }, () => { if (active) setMoviesLoading(false); });
     const unsubWatchLog = onSnapshot(watchLogQ, (snapshot) => {

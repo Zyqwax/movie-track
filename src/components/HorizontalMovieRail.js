@@ -38,7 +38,7 @@ export default function HorizontalMovieRail({ children, className = "" }) {
   }, [updateScrollButtons]);
 
   const handlePointerDown = (event) => {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
     const rail = railRef.current;
     if (!rail) return;
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
@@ -123,6 +123,8 @@ export default function HorizontalMovieRail({ children, className = "" }) {
           overscrollBehaviorX: "contain",
           scrollBehavior: "smooth",
           WebkitOverflowScrolling: "touch",
+          scrollSnapType: "x mandatory",
+          scrollPadding: "0 1rem",
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

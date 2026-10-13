@@ -74,3 +74,11 @@ export function saveWatchLog(uid, movieId, data) {
 export function removeWishlistMovie(uid, movieId) {
   return deleteDoc(listMovieRef(uid, "wishlist", movieId));
 }
+
+export function removeWatchedMovie(uid, movieId) {
+  return deleteDoc(listMovieRef(uid, "watched", movieId));
+}
+
+export function removeWatchLog(uid, movieId) {
+  return deleteDoc(watchLogRef(uid, movieId));
+}

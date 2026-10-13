@@ -10,7 +10,7 @@ export function ShowcaseMovieCard({ movie, watchedLabel, className }) {
   return (
     <Link
       href={`/movie/${movie.id}`}
-      className={`group relative block aspect-video w-[280px] shrink-0 overflow-hidden rounded-xl border border-white/5 bg-surface2 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-gold/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] max-md:w-[75vw] ${className || ""}`}
+      className={`group relative block aspect-video w-[280px] shrink-0 snap-start overflow-hidden rounded-xl border border-white/5 bg-surface2 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-gold/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] max-md:w-[75vw] ${className || ""}`}
     >
       {imagePath ? (
         <Image

@@ -32,7 +32,15 @@ import TrailerButton from "@/components/pages/movie/TrailerButton";
 import ProviderList from "@/components/pages/movie/ProviderList";
 import RatingReview from "@/components/pages/movie/RatingReview";
 import WatchHistory from "@/components/pages/movie/WatchHistory";
-import { getUserMovieState, removeWishlistMovie, saveWatchLog, saveWishlistMovie, saveWatchedMovie } from "@/lib/user-lists";
+import {
+  getUserMovieState,
+  removeWishlistMovie,
+  removeWatchedMovie,
+  removeWatchLog,
+  saveWatchLog,
+  saveWishlistMovie,
+  saveWatchedMovie,
+} from "@/lib/user-lists";
 
 dayjs.extend(relativeTime);
 
@@ -110,7 +118,7 @@ export default function MovieDetailPage({ params }) {
       isWatched: true,
     };
     await Promise.all([
-      saveWishlistMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
+      removeWishlistMovie(user.uid, movieId),
       saveWatchedMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
       saveWatchLog(user.uid, movieId, newData),
     ]);
@@ -133,7 +141,7 @@ export default function MovieDetailPage({ params }) {
       isWatched: true,
     };
     await Promise.all([
-      saveWishlistMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
+      removeWishlistMovie(user.uid, movieId),
       saveWatchedMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
       saveWatchLog(user.uid, movieId, newData),
     ]);
@@ -151,8 +159,12 @@ export default function MovieDetailPage({ params }) {
     setSaving(true);
     if (newStatus === "wishlist") {
       const wishlistData = { title: movie.title, posterPath: movie.posterPath, status: "wishlist", addedAt: userData?.addedAt || Date.now() };
-      await saveWishlistMovie(user.uid, movieId, wishlistData);
-      setUserData({ ...userData, ...wishlistData, status: "wishlist", isWatched: Boolean(userData?.isWatched) });
+      await Promise.all([
+        saveWishlistMovie(user.uid, movieId, wishlistData),
+        removeWatchedMovie(user.uid, movieId),
+        saveWatchLog(user.uid, movieId, { ...wishlistData, isWatched: false, watchHistory: [] }),
+      ]);
+      setUserData({ ...userData, ...wishlistData, status: "wishlist", isWatched: false, watchHistory: [] });
       setSaving(false);
       return;
     }
@@ -167,26 +179,43 @@ export default function MovieDetailPage({ params }) {
       addedAt: userData?.addedAt || Date.now(),
       isWatched: true,
     };
-    await saveWatchLog(user.uid, movieId, newData);
+    await Promise.all([
+      removeWishlistMovie(user.uid, movieId),
+      saveWatchedMovie(user.uid, movieId, { title: movie.title, posterPath: movie.posterPath, addedAt: newData.addedAt }),
+      saveWatchLog(user.uid, movieId, newData),
+    ]);
     setUserData({ ...newData, status: "watched" });
     setSaving(false);
   };
 
   const removeMovie = async () => {
     setSaving(true);
-    await removeWishlistMovie(user.uid, movieId);
+    await Promise.all([
+      removeWishlistMovie(user.uid, movieId),
+      removeWatchedMovie(user.uid, movieId),
+      removeWatchLog(user.uid, movieId),
+    ]);
     setUserData(null);
     setSaving(false);
   };
   const removeWatchEntry = async (idx) => {
     const newHistory = (userData.watchHistory || []).filter((_, i) => i !== idx);
+    const hasHistory = newHistory.length > 0;
     const newData = {
       ...userData,
       watchHistory: newHistory,
-      watchedAt: newHistory.length > 0 ? newHistory[0].ts : null,
-      status: newHistory.length > 0 ? "watched" : "wishlist",
+      watchedAt: hasHistory ? newHistory[0].ts : null,
+      status: hasHistory ? "watched" : null,
+      isWatched: hasHistory,
     };
-    await saveWatchLog(user.uid, movieId, { ...newData, isWatched: newHistory.length > 0 });
+    if (hasHistory) {
+      await saveWatchLog(user.uid, movieId, newData);
+    } else {
+      await Promise.all([
+        removeWatchedMovie(user.uid, movieId),
+        saveWatchLog(user.uid, movieId, newData),
+      ]);
+    }
     setUserData(newData);
   };
 
