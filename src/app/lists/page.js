@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, doc, onSnapshot, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, onSnapshot, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -83,6 +83,22 @@ export default function ListsPage() {
     setEditingId(null);
   };
 
+  const deleteList = async (list) => {
+    if (!user || list.id === "wishlist" || list.id === "watched") return;
+    const confirmMessage = language === "tr"
+      ? `"${list.name}" listesini silmek istediğinizden emin misiniz?`
+      : `Are you sure you want to delete the list "${list.name}"?`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const moviesSnap = await getDocs(collection(db, "users", user.uid, "lists", list.id, "movies"));
+      await Promise.all(moviesSnap.docs.map((movieDoc) => deleteDoc(movieDoc.ref)));
+      await deleteDoc(doc(db, "users", user.uid, "lists", list.id));
+    } catch (err) {
+      console.error("List deletion error:", err);
+    }
+  };
+
   const changeVisibility = (list, visibility) => updateDoc(doc(db, "users", user.uid, "lists", list.id), { visibility, updatedAt: serverTimestamp() });
 
   if (authLoading || !user) return <PageLoading />;
@@ -102,6 +118,7 @@ export default function ListsPage() {
         onEditingNameChange={setEditingName}
         onSave={saveList}
         onVisibilityChange={changeVisibility}
+        onDelete={deleteList}
         newListButton={<NewListButton name={name} creating={creating} onNameChange={setName} onSubmit={createList} t={t} />}
       />
     </div>

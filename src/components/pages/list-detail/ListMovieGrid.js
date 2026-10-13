@@ -91,89 +91,86 @@ export default function ListMovieGrid({
     }));
 
   return (
-    <section aria-label={t("lists.title")} className="space-y-6">
+    <section aria-label={t("lists.title")} className="space-y-8">
       {orderedGroups.map((group) => (
         <div key={group.label || "all"}>
           {group.label && (
-            <h2 className="mb-2 border-b border-border pb-2 text-sm font-medium capitalize text-muted">
+            <h2 className="mb-4 border-b border-border pb-2 text-sm font-semibold capitalize text-muted">
               {group.label}
             </h2>
           )}
-          <div className="divide-border overflow-hidden rounded-[var(--radius-lg)] border border-border bg-surface divide-y">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 md:gap-4">
             {group.movies.map((movie) => {
               const path = posterPath(movie);
-              const hasStatusBadge = movie.ownerWatched || movie.viewerWatched || movie.inViewerList || movie.isWatched;
+              const title = movie.title || "Film";
+              const releaseYear = movie.releaseDate ? movie.releaseDate.slice(0, 4) : movie.release_date ? movie.release_date.slice(0, 4) : null;
+              const rating = movie.rating || movie.voteAverage || movie.vote_average;
 
               return (
-                <article
-                  key={movie.id}
-                  className="group relative flex min-h-[72px] items-center gap-3 bg-surface px-3 py-3 transition-colors hover:bg-surface-2 sm:px-4"
-                >
+                <div key={movie.id} className="group relative flex flex-col min-w-0">
                   <Link
                     href={`/movie/${movie.id}`}
-                    className="flex min-w-0 flex-1 items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    className="relative block aspect-[2/3] w-full overflow-hidden rounded-[var(--radius-md)] border border-border bg-surface-2 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:border-accent/40 hover:shadow-xl hover:shadow-black/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
-                    {/* Poster — compact */}
-                    <div className="relative h-16 w-11 shrink-0 overflow-hidden rounded-[var(--radius-md)] border border-border bg-surface-1">
-                      {path ? (
-                        <Image
-                          src={`https://image.tmdb.org/t/p/w185${path}`}
-                          alt={movie.title || "Movie poster"}
-                          fill
-                          sizes="44px"
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-muted">
-                          <Film size={16} aria-hidden="true" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-text">{movie.title}</p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                        {movie.releaseDate && (
-                          <span className="text-xs text-muted">{movie.releaseDate.slice(0, 4)}</span>
-                        )}
-                        {isWatchedList && (
-                          <span className="text-xs text-accent">
-                            {watchedDate(movie.watchedAt || movie.watchDate, language)}
-                          </span>
-                        )}
+                    {path ? (
+                      <Image
+                        src={`https://image.tmdb.org/t/p/w342${path}`}
+                        alt={title}
+                        fill
+                        sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, (max-width: 1024px) 22vw, 180px"
+                        loading="lazy"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted">
+                        <Film size={28} aria-hidden="true" />
                       </div>
-                    </div>
-                  </Link>
+                    )}
 
-                  {/* Status badges — right side */}
-                  {hasStatusBadge && (
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    {/* Gradient overlay */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-bg/95 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+
+                    {/* Status badges */}
+                    <div className="absolute left-2 top-2 z-10 flex flex-col gap-1 items-start">
                       {movie.isWatched && !movie.ownerWatched && !movie.viewerWatched && !movie.inViewerList && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-border-success bg-success/10 px-2.5 py-1 text-[11px] font-medium text-success">
+                        <span className="flex items-center gap-1 rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold text-bg shadow-md">
                           <Check size={11} aria-hidden="true" />
-                          {watchedLabel}
+                          <span>{watchedLabel}</span>
                         </span>
                       )}
                       {movie.ownerWatched && ownerWatchedLabel && (
-                        <span className="rounded-full bg-accent-alt px-2.5 py-1 text-[11px] font-medium text-bg">
+                        <span className="rounded-full bg-accent-alt px-2 py-0.5 text-[10px] font-semibold text-bg shadow-md">
                           {ownerWatchedLabel}
                         </span>
                       )}
                       {movie.viewerWatched && viewerWatchedLabel && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-border-success bg-success/10 px-2.5 py-1 text-[11px] font-medium text-success">
+                        <span className="flex items-center gap-1 rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold text-bg shadow-md">
                           <Check size={11} aria-hidden="true" />
-                          {viewerWatchedLabel}
+                          <span>{viewerWatchedLabel}</span>
                         </span>
                       )}
                       {movie.inViewerList && viewerListLabel && (
-                        <span className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-medium text-bg">
+                        <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-bg shadow-md">
                           {viewerListLabel}
                         </span>
                       )}
                     </div>
-                  )}
+
+                    {/* Rating badge */}
+                    {rating > 0 && (
+                      <span className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold text-text backdrop-blur-xs">
+                        ★ {Number(rating).toFixed(1)}
+                      </span>
+                    )}
+
+                    {/* Watched date for watched list */}
+                    {isWatchedList && (movie.watchedAt || movie.watchDate) && (
+                      <span className="absolute bottom-2 left-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-medium text-accent backdrop-blur-xs">
+                        {watchedDate(movie.watchedAt || movie.watchDate, language)}
+                      </span>
+                    )}
+                  </Link>
 
                   {/* Remove button */}
                   {onRemove && (
@@ -181,12 +178,25 @@ export default function ListMovieGrid({
                       type="button"
                       onClick={() => onRemove(movie)}
                       aria-label={t("movie.removeRecord")}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted opacity-0 transition-all hover:bg-danger/10 hover:text-danger group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+                      className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-bg/80 text-muted opacity-0 shadow-md backdrop-blur-xs transition-all hover:bg-danger hover:text-bg group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
                     >
-                      <X size={15} aria-hidden="true" />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   )}
-                </article>
+
+                  {/* Movie Info */}
+                  <div className="mt-2 min-w-0">
+                    <Link
+                      href={`/movie/${movie.id}`}
+                      className="block truncate text-sm font-semibold text-text hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      {title}
+                    </Link>
+                    {releaseYear && (
+                      <p className="mt-0.5 text-xs text-muted">{releaseYear}</p>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
