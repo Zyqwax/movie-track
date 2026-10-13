@@ -46,6 +46,7 @@ export default function HorizontalMovieRail({ children, className = "" }) {
   };
 
   const handlePointerMove = (event) => {
+    if (event.pointerType !== "mouse") return;
     const rail = railRef.current;
     const drag = dragRef.current;
     if (!rail || !drag.active) return;
@@ -85,6 +86,7 @@ export default function HorizontalMovieRail({ children, className = "" }) {
   };
 
   const stopDragging = (event) => {
+    if (event.pointerType !== "mouse") return;
     const rail = railRef.current;
     if (rail?.hasPointerCapture(event.pointerId)) rail.releasePointerCapture(event.pointerId);
     const velocity = dragRef.current.velocity;
@@ -117,9 +119,9 @@ export default function HorizontalMovieRail({ children, className = "" }) {
     <div className="group/rail relative">
       <div
         ref={railRef}
-        className={`cursor-grab active:cursor-grabbing ${className}`}
+        className={`md:cursor-grab md:active:cursor-grabbing ${className}`}
         style={{
-          touchAction: "pan-y",
+          touchAction: "pan-x pan-y",
           overscrollBehaviorX: "contain",
           scrollBehavior: "smooth",
           WebkitOverflowScrolling: "touch",
